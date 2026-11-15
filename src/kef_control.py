@@ -51,13 +51,99 @@ except ImportError:  # pragma: no cover
     raise
 
 APP_NAME = "KEF Control"
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.3.0"
+GITHUB_REPO = "jung1021/kef-control-app"
+UPDATE_CHECK_INTERVAL = 24 * 3600
+def _is_packaged() -> bool:
+    """True when running from the Microsoft Store (MSIX) package."""
+    if sys.platform != "win32":
+        return False
+    try:
+        import ctypes
+        length = ctypes.c_uint32(0)
+        rc = ctypes.windll.kernel32.GetCurrentPackageFullName(ctypes.byref(length), None)
+        return rc != 15700  # APPMODEL_ERROR_NO_PACKAGE
+    except Exception:  # noqa: BLE001
+        return False
+
+
+IS_PACKAGED = _is_packaged()
 REDISCOVER_INTERVAL = 45.0  # seconds between network scans while the speaker is unreachable
 PORT = 47801
 HERE = Path(__file__).resolve().parent
 UI_FILE = HERE / "ui.html"
 
 log = logging.getLogger("kefcontrol")
+
+# Last few warnings/errors, shown in "Copy diagnostics" (no personal data is logged).
+import collections  # noqa: E402
+
+RECENT_ERRORS: collections.deque = collections.deque(maxlen=20)
+
+
+class _RecentErrors(logging.Handler):
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            RECENT_ERRORS.append((time.strftime("%H:%M:%S"), f"{record.levelname} {record.getMessage()}"[:300]))
+        except Exception:  # noqa: BLE001
+            pass
+
+
+_h = _RecentErrors(logging.WARNING)
+logging.getLogger().addHandler(_h)
+
+
+# --------------------------------------------------------------------------- #
+# Update check (GitHub releases) - at startup and once a day, can be turned off
+# --------------------------------------------------------------------------- #
+
+
+def _ver(s: str) -> tuple[int, ...]:
+    out = []
+    for part in s.strip().lstrip("vV").split("."):
+        num = "".join(ch for ch in part if ch.isdigit())
+        out.append(int(num) if num else 0)
+    return tuple(out)
+
+
+class UpdateChecker:
+    def __init__(self, enabled: Callable[[], bool]) -> None:
+        self.enabled = enabled
+        self.latest: dict[str, Any] | None = None
+        self.checked_at: float | None = None
+        self.error: str | None = None
+
+    def check(self) -> dict[str, Any] | None:
+        import ssl
+        import urllib.request
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+        req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json",
+                                                   "User-Agent": f"KEFControl/{APP_VERSION}"})
+        try:
+            with urllib.request.urlopen(req, timeout=10, context=ssl.create_default_context()) as r:
+                data = json.loads(r.read().decode("utf-8"))
+            tag = str(data.get("tag_name") or "")
+            self.checked_at = time.time()
+            self.error = None
+            if tag and _ver(tag) > _ver(APP_VERSION):
+                self.latest = {"version": tag.lstrip("vV"), "url": data.get("html_url"),
+                               "notes": (data.get("body") or "")[:2000]}
+            else:
+                self.latest = None
+        except Exception as err:  # noqa: BLE001 - offline etc.
+            self.error = str(err)
+            log.debug("update check failed: %s", err)
+        return self.latest
+
+    def loop(self) -> None:
+        time.sleep(20)  # don't slow down start-up
+        while True:
+            if self.enabled():
+                self.check()
+            time.sleep(UPDATE_CHECK_INTERVAL)
+
+    def start(self) -> None:
+        threading.Thread(target=self.loop, daemon=True, name="kef-update-check").start()
 
 
 # --------------------------------------------------------------------------- #
@@ -192,6 +278,7 @@ class SpeakerManager:
         self.last_error: str | None = None
         self._last_discovery = -1e9
         self.reconnected_at: float | None = None
+        self._migrate_speakers()
         host = self.cfg.get("host")
         if host:
             self._open(host)
@@ -212,24 +299,94 @@ class SpeakerManager:
         if not host:
             raise ApiError("Enter the speaker's IP address.")
         with self.lock:
+            previous = self.cfg.get("host")
             self._open(host)
             try:
                 self._load_info()
             except Exception as err:  # noqa: BLE001
                 self.last_error = str(err)
+                if previous and previous != host:
+                    self._open(previous)  # keep using the speaker we had
                 raise ApiError(f"Could not reach a KEF speaker at {host}: {err}", 502) from err
             self.cfg["host"] = host
+            self._remember_current()
             save_config(self.cfg)
         return self.info
 
     def forget(self) -> None:
+        """Remove the current speaker; switch to another saved one if there is one."""
         with self.lock:
+            cur = self._current_id()
+            self.cfg["speakers"] = [sp for sp in self.cfg.get("speakers", []) if sp["id"] != cur]
             if self.client:
                 self.client.close()
             self.client = None
             self.info = {}
-            self.cfg.pop("host", None)
+            for k in ("host", "mac", "name"):
+                self.cfg.pop(k, None)
+            rest = self.cfg["speakers"]
+            if rest:
+                self._select(rest[0])
             save_config(self.cfg)
+
+    # -- multiple speakers ---------------------------------------------------------
+    def _migrate_speakers(self) -> None:
+        if "speakers" not in self.cfg:
+            self.cfg["speakers"] = []
+            if self.cfg.get("host"):
+                self.cfg["speakers"].append({
+                    "id": self.cfg.get("mac") or self.cfg["host"], "host": self.cfg["host"],
+                    "mac": self.cfg.get("mac"), "name": self.cfg.get("name"), "model": None})
+            save_config(self.cfg)
+
+    def _current_id(self) -> str | None:
+        return self.cfg.get("mac") or self.cfg.get("host")
+
+    def _remember_current(self) -> None:
+        """Add/update the connected speaker in the saved list (keyed by MAC, else host)."""
+        host, mac = self.cfg.get("host"), self.cfg.get("mac")
+        if not host:
+            return
+        items = self.cfg.setdefault("speakers", [])
+        rec = next((sp for sp in items if (mac and sp.get("mac") == mac) or sp.get("host") == host
+                    or sp["id"] == host), None)
+        if rec is None:
+            rec = {}
+            items.append(rec)
+        rec.update({"id": mac or host, "host": host, "mac": mac, "name": self.cfg.get("name"),
+                    "model": (self.info or {}).get("model") or rec.get("model")})
+
+    def _select(self, rec: dict[str, Any]) -> None:
+        self.cfg["host"] = rec["host"]
+        for k in ("mac", "name"):
+            if rec.get(k):
+                self.cfg[k] = rec[k]
+            else:
+                self.cfg.pop(k, None)
+        self._open(rec["host"])
+
+    def speakers(self) -> dict[str, Any]:
+        cur = self._current_id()
+        return {"speakers": [dict(sp, current=sp["id"] == cur) for sp in self.cfg.get("speakers", [])],
+                "current": cur}
+
+    def switch_speaker(self, sid: str) -> dict[str, Any]:
+        with self.lock:
+            rec = next((sp for sp in self.cfg.get("speakers", []) if sp["id"] == sid), None)
+            if rec is None:
+                raise ApiError("That speaker isn't saved any more.", 404)
+            self._select(rec)
+            save_config(self.cfg)
+        return self.speakers()
+
+    def remove_speaker(self, sid: str) -> dict[str, Any]:
+        with self.lock:
+            if sid == self._current_id():
+                self.forget()
+            else:
+                self.cfg["speakers"] = [sp for sp in self.cfg.get("speakers", []) if sp["id"] != sid]
+                save_config(self.cfg)
+        return self.speakers()
 
     def _need(self) -> KefClient:
         if self.client is None:
@@ -266,6 +423,7 @@ class SpeakerManager:
         log.info("Speaker moved from %s to %s", current, match.host)
         self._open(match.host)
         self.cfg["host"] = match.host
+        self._remember_current()
         save_config(self.cfg)
         self.reconnected_at = time.time()
         return True
@@ -297,15 +455,17 @@ class SpeakerManager:
             "sources": [s.value for s in caps.sources],
         }
         mac = norm_mac(di.mac_address)
-        changed = False
-        if mac and self.cfg.get("mac") != mac:
+        if self.cfg.get("host") != c.host:
+            # Switched to a different speaker: forget the previous one's identity.
+            self.cfg["host"] = c.host
+            self.cfg.pop("mac", None)
+            self.cfg.pop("name", None)
+        if mac:
             self.cfg["mac"] = mac
-            changed = True
-        if di.name and self.cfg.get("name") != di.name:
+        if di.name:
             self.cfg["name"] = di.name
-            changed = True
-        if changed:
-            save_config(self.cfg)
+        self._remember_current()
+        save_config(self.cfg)
 
     # -- state -----------------------------------------------------------------
     def state(self) -> dict[str, Any]:
@@ -322,10 +482,14 @@ class SpeakerManager:
                 muted = c.get_mute()
             except Exception:  # noqa: BLE001
                 muted = None
+            playing = None
+            if source.value in ("wifi", "bluetooth"):
+                playing = self._now_playing(c)
             return {
                 "configured": True,
                 "connected": True,
                 "info": self.info,
+                "playing": playing,
                 "source": source.value,
                 "status": status.value,
                 "on": source != Source.STANDBY and status.value != "standby",
@@ -338,6 +502,8 @@ class SpeakerManager:
                 st = self.run(read)
                 self.last_error = None
                 st["profile"] = self.cfg.get("active_profile")
+                st["update"] = UPDATES.latest if UPDATES else None
+                st["speaker_count"] = len(self.cfg.get("speakers", []))
                 return st
             except Exception as err:  # noqa: BLE001
                 self.last_error = str(err)
@@ -345,6 +511,39 @@ class SpeakerManager:
                 return {"configured": True, "connected": False,
                         "host": self.client.host if self.client else None,
                         "error": str(err), "info": self.info}
+
+    def _now_playing(self, c: KefClient) -> dict[str, Any] | None:
+        try:
+            ps = c.get_player_state()
+        except Exception as err:  # noqa: BLE001 - not available on every source/firmware
+            log.debug("player state unavailable: %s", err)
+            return None
+        t = ps.track
+        pos = None
+        if t is not None and t.duration_ms:
+            try:
+                pos = c.get_play_position()
+            except Exception:  # noqa: BLE001
+                pos = None
+        return {
+            "state": ps.state.value if hasattr(ps.state, "value") else str(ps.state),
+            "title": t.title if t else None,
+            "artist": t.artist if t else None,
+            "album": t.album if t else None,
+            "cover": t.cover_url if t else None,
+            "duration": t.duration_ms if t else None,
+            "position": pos,
+            "live": bool(t.live) if t else False,
+            "can": {"pause": ps.controls.pause, "next": ps.controls.next,
+                    "previous": ps.controls.previous},
+        }
+
+    def playback(self, action: str) -> None:
+        fns = {"playpause": lambda c: c.play_pause(), "next": lambda c: c.next_track(),
+               "previous": lambda c: c.previous_track()}
+        if action not in fns:
+            raise ApiError(f"Unknown playback action {action}")
+        self.run(fns[action])
 
     # -- controls --------------------------------------------------------------
     def power(self, on: bool, source: str | None = None) -> None:
@@ -571,6 +770,21 @@ class SpeakerManager:
                 save_config(self.cfg)
         return self.profiles()
 
+    # -- app settings ---------------------------------------------------------------
+    def app_settings(self) -> dict[str, Any]:
+        return {"check_updates": self.cfg.get("check_updates", True), "version": APP_VERSION,
+                "store": IS_PACKAGED,
+                "update": UPDATES.latest if UPDATES else None,
+                "checked_at": UPDATES.checked_at if UPDATES else None, "repo": GITHUB_REPO}
+
+    def set_app_setting(self, key: str, value: Any) -> dict[str, Any]:
+        if key != "check_updates":
+            raise ApiError(f"Unknown option {key}")
+        with self.lock:
+            self.cfg[key] = bool(value)
+            save_config(self.cfg)
+        return self.app_settings()
+
     # -- power sync settings ------------------------------------------------------
     def power_sync(self) -> dict[str, Any]:
         from powersync import LABELS, settings_from
@@ -587,6 +801,34 @@ class SpeakerManager:
             self.cfg.setdefault("power_sync", {})[key] = bool(value)
             save_config(self.cfg)
         return self.power_sync()
+
+    def diagnostics(self) -> str:
+        import platform
+        try:
+            from importlib.metadata import version as _v
+            libver = _v("pykefcontrol")
+        except Exception:  # noqa: BLE001
+            libver = "?"
+        st = self.state()
+        info = st.get("info") or {}
+        dev = info.get("device") or {}
+        lines = [
+            f"KEF Control {APP_VERSION}",
+            f"Windows/OS: {platform.platform()}",
+            f"Python {platform.python_version()} | pykefcontrol {libver}",
+            f"Speaker: {dev.get('model_name') or info.get('model')} | firmware {info.get('firmware') or dev.get('firmware_version')}",
+            f"Connection: {'connected' if st.get('connected') else 'NOT connected'} | "
+            f"{'HTTPS' if info.get('secure') else 'HTTP'} | host {self.cfg.get('host')}",
+            f"Input: {st.get('source')} | status {st.get('status')} | volume {st.get('volume')}",
+            f"Saved speakers: {len(self.cfg.get('speakers', []))} | profiles: {len(self.cfg.get('profiles', []))}",
+            f"Last error: {st.get('error') or self.last_error or 'none'}",
+        ]
+        if POWER is not None and POWER.log:
+            lines.append("Power sync: " + "; ".join(f"{e} -> {r}" for _, e, r in POWER.log[-5:]))
+        if RECENT_ERRORS:
+            lines.append("Recent problems:")
+            lines += [f"  {t} {m}" for t, m in list(RECENT_ERRORS)[-8:]]
+        return "\n".join(lines)
 
     def reboot(self) -> None:
         with self.lock:
@@ -653,6 +895,7 @@ MANAGER: SpeakerManager
 LIFETIME = Lifetime()
 ON_QUIT = None  # set in main(); called by POST /api/quit
 POWER = None  # powersync.PowerSync, set in main()
+UPDATES = None  # UpdateChecker, set in main()
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -712,6 +955,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"speakers": discover()})
             if path == "/api/profiles":
                 return self._json(MANAGER.profiles())
+            if path == "/api/speakers":
+                return self._json(MANAGER.speakers())
+            if path == "/api/app":
+                return self._json(MANAGER.app_settings())
+            if path == "/api/diagnostics":
+                return self._send(200, MANAGER.diagnostics().encode("utf-8"), "text/plain; charset=utf-8")
             if path == "/api/powersync":
                 return self._json(MANAGER.power_sync())
             if path == "/api/ping":
@@ -763,6 +1012,22 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(m.delete_profile(str(body["name"])))
             elif path == "/api/profiles/move":
                 return self._json(m.move_profile(str(body["name"]), int(body.get("delta", 0))))
+            elif path == "/api/playback":
+                m.playback(str(body.get("action", "")))
+            elif path == "/api/speakers/switch":
+                return self._json(m.switch_speaker(str(body["id"])))
+            elif path == "/api/speakers/remove":
+                return self._json(m.remove_speaker(str(body["id"])))
+            elif path == "/api/app":
+                return self._json(m.set_app_setting(str(body["key"]), body.get("value")))
+            elif path == "/api/update/check":
+                if UPDATES is not None:
+                    UPDATES.check()
+                return self._json(m.app_settings())
+            elif path == "/api/open":
+                url = str(body.get("url", ""))
+                if url.startswith(f"https://github.com/{GITHUB_REPO}"):
+                    webbrowser.open(url)
             elif path == "/api/powersync":
                 return self._json(m.set_power_sync(str(body["key"]), body.get("value")))
             elif path == "/api/reboot":
@@ -854,7 +1119,7 @@ def request_quit(timeout: float = 8.0) -> None:
 
 
 def main() -> None:
-    global MANAGER, ON_QUIT, POWER
+    global MANAGER, ON_QUIT, POWER, UPDATES
     ap = argparse.ArgumentParser(description=APP_NAME)
     ap.add_argument("--debug", action="store_true")
     ap.add_argument("--background", action="store_true",
@@ -914,6 +1179,8 @@ def main() -> None:
             pass
         return
 
+    UPDATES = UpdateChecker(lambda: bool(MANAGER.cfg.get("check_updates", True)) and not IS_PACKAGED)
+    UPDATES.start()
     from powersync import PowerSync, WindowsListener, settings_from
     POWER = PowerSync(MANAGER, lambda: settings_from(MANAGER.cfg))
     WindowsListener(POWER.event).start()

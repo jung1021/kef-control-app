@@ -34,6 +34,13 @@ ZIP=$(basename "$(ls "$STAGE"/runtime/python3*.zip)")
 printf '%s\r\n.\r\nLib\\site-packages\r\n..\\app\r\n' "$ZIP" > "$PTH"
 cp ../src/kef_control.py ../src/tray.py ../src/powersync.py ../src/ui.html ../src/kef_control.ico "$STAGE/app/"
 
+echo "==> Precompiling Python files (faster start-up)"
+if python3 -c "import sys; sys.exit(0 if '%d.%d' % sys.version_info[:2] == '${PY_VERSION%.*}' else 1)"; then
+  python3 -m compileall -q -j 0 --invalidation-mode unchecked-hash "$STAGE/runtime/Lib/site-packages" "$STAGE/app" >/dev/null
+else
+  echo "    (skipped: host Python is not ${PY_VERSION%.*})"
+fi
+
 echo "==> Launcher (KEFControl.exe)"
 x86_64-w64-mingw32-windres launcher.rc -O coff -o launcher.res
 x86_64-w64-mingw32-gcc -municode -mwindows -O2 -s -o "$STAGE/KEFControl.exe" launcher.c launcher.res

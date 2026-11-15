@@ -45,8 +45,20 @@ def _launch_command(script: Path) -> str:
     return f'"{exe}" "{script}" --background'
 
 
-def autostart_enabled() -> bool:
+def _packaged() -> bool:
+    """True when running from the Microsoft Store (MSIX) package."""
     if sys.platform != "win32":
+        return False
+    try:
+        import ctypes
+        length = ctypes.c_uint32(0)
+        return ctypes.windll.kernel32.GetCurrentPackageFullName(ctypes.byref(length), None) != 15700
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def autostart_enabled() -> bool:
+    if sys.platform != "win32" or _packaged():
         return False
     import winreg
     try:
@@ -186,6 +198,8 @@ class Tray:
 
         return pystray.Menu(
             I("Open KEF Control", lambda *_: self.open_window(), default=True),
+            I(lambda _: f"Update available: v{(self._update() or {}).get('version', '')}",
+              self._open_update, visible=lambda _: bool(self._update())),
             pystray.Menu.SEPARATOR,
             I(lambda _: self._status_text(), None, enabled=False),
             I(lambda _: "Standby" if self.state.get("on") else "Turn on",
@@ -195,12 +209,20 @@ class Tray:
             I("Volume up", self._do(lambda: self.m.step_volume(+1)), enabled=lambda _: self._connected()),
             I("Volume down", self._do(lambda: self.m.step_volume(-1)), enabled=lambda _: self._connected()),
             I("Source", pystray.Menu(*[src_item(s) for s in SOURCE_ORDER]), enabled=lambda _: self._connected()),
+            I("Play / Pause", self._do(lambda: self.m.playback("playpause")),
+              visible=lambda _: self._streaming()),
+            I("Next track", self._do(lambda: self.m.playback("next")), visible=lambda _: self._streaming()),
             I("Sound profile", pystray.Menu(self._profile_items),
               enabled=lambda _: self._connected() and bool(self.m.cfg.get("profiles")),
               visible=lambda _: bool(self.m.cfg.get("profiles"))),
+            I("Speakers", pystray.Menu(self._speaker_items),
+              visible=lambda _: len(self.m.cfg.get("speakers") or []) > 1),
             pystray.Menu.SEPARATOR,
             I("Start with Windows", self._toggle_autostart, checked=lambda _: autostart_enabled(),
-              visible=sys.platform == "win32"),
+              visible=sys.platform == "win32" and not _packaged()),
+            # Store version: start-up is a Windows "startup app" managed in Settings.
+            I("Startup settings…", lambda *_: os.startfile("ms-settings:startupapps"),
+              visible=sys.platform == "win32" and _packaged()),
             I("Quit", self._quit),
         )
 
@@ -211,6 +233,30 @@ class Tray:
             items.append(pystray.MenuItem(
                 name, self._do(lambda n=name: self.m.apply_profile(n)),
                 checked=lambda _, n=name: self.m.cfg.get("active_profile") == n, radio=True))
+        return tuple(items)
+
+    def _streaming(self) -> bool:
+        return self._connected() and bool(self.state.get("on")) and self.state.get("source") in ("wifi", "bluetooth")
+
+    def _update(self) -> dict | None:
+        return self.state.get("update")
+
+    def _open_update(self, *_: Any) -> None:
+        import webbrowser
+        u = self._update()
+        if u and u.get("url"):
+            webbrowser.open(u["url"])
+
+    def _speaker_items(self) -> tuple:
+        items = []
+        cur = self.m._current_id()
+        for sp in self.m.cfg.get("speakers") or []:
+            sid = sp["id"]
+            label = sp.get("name") or sp.get("host")
+            items.append(pystray.MenuItem(
+                label, self._do(lambda i=sid: self.m.switch_speaker(i)),
+                checked=lambda _, i=sid: self.m._current_id() == i, radio=True))
+        del cur
         return tuple(items)
 
     def _status_text(self) -> str:
@@ -224,7 +270,9 @@ class Tray:
         name = ((s.get("info") or {}).get("device") or {}).get("name") or "KEF"
         if not s.get("on"):
             return f"{name}: standby"
-        return f"{name}: {SOURCE_LABELS.get(s.get('source'), s.get('source'))} · vol {s.get('volume')}"
+        p = s.get("playing") or {}
+        track = f" · {p['title'][:40]}" if p.get("title") else ""
+        return f"{name}: {SOURCE_LABELS.get(s.get('source'), s.get('source'))} · vol {s.get('volume')}{track}"
 
     def _toggle_autostart(self, *_: Any) -> None:
         try:

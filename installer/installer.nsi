@@ -5,7 +5,7 @@ Unicode true
 !include "Sections.nsh"
 
 !define APPNAME   "KEF Control"
-!define VERSION   "1.2.0"
+!define VERSION   "1.3.0"
 !define EXE       "KEFControl.exe"
 !define UNINSTKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\KEFControl"
 !define RUNKEY    "Software\Microsoft\Windows\CurrentVersion\Run"

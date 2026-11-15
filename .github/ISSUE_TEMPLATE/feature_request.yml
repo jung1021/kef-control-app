@@ -1,0 +1,19 @@
+name: Feature request
+description: Suggest an idea for KEF Control
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like KEF Control to do?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why would it help you?
+  - type: dropdown
+    id: model
+    attributes:
+      label: Your speaker model
+      options: [LSX II LT, LSX II, LS50 Wireless II, LS60 Wireless, XIO, LS LUXE, Other]

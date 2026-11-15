@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KEF Control for Windows – Free KEF Connect App for PC (LSX II, LSX II LT, LS50 Wireless II)</title>
+<meta name="description" content="Control KEF LSX II, LSX II LT, LS50 Wireless II and LS60 speakers from your Windows PC. Free, open-source alternative to the KEF Connect app: volume, inputs, EQ settings, sound profiles and power sync.">
+<meta name="keywords" content="KEF Connect Windows, KEF Connect PC, KEF LSX II PC app, LSX II LT Windows, KEF desktop app, KEF speaker control, LS50 Wireless II PC, KEF Connect alternative">
+<link rel="canonical" href="https://jung1021.github.io/kef-control-app/">
+<meta name="theme-color" content="#0f1012">
+<meta property="og:type" content="website">
+<meta property="og:title" content="KEF Control for Windows – free KEF Connect app for PC">
+<meta property="og:description" content="Control your KEF LSX II / LSX II LT / LS50 Wireless II speakers from Windows: volume, inputs, all sound settings, profiles and PC power sync. Free and open source.">
+<meta property="og:url" content="https://jung1021.github.io/kef-control-app/">
+<meta property="og:image" content="https://jung1021.github.io/kef-control-app/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="KEF Control for Windows – free KEF Connect app for PC">
+<meta name="twitter:description" content="Control KEF wireless speakers from your Windows PC. Free and open source.">
+<meta name="twitter:image" content="https://jung1021.github.io/kef-control-app/social-preview.png">
+<!-- Google Search Console: paste your verification tag on the next line -->
+<link rel="icon" href="favicon.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "KEF Control for Windows",
+  "operatingSystem": "Windows 10, Windows 11",
+  "applicationCategory": "MultimediaApplication",
+  "description": "Free desktop app to control KEF LSX II, LSX II LT, LS50 Wireless II, LS60 Wireless and other KEF W2 wireless speakers from a Windows PC: volume, inputs, sound settings, sound profiles, now playing and power sync.",
+  "softwareVersion": "1.3.0",
+  "license": "https://opensource.org/licenses/MIT",
+  "url": "https://jung1021.github.io/kef-control-app/",
+  "downloadUrl": "https://github.com/jung1021/kef-control-app/releases/latest",
+  "screenshot": "https://jung1021.github.io/kef-control-app/screenshots/overview.png",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "jung1021", "url": "https://github.com/jung1021" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type": "Question", "name": "Is there a KEF Connect app for Windows?",
+     "acceptedAnswer": {"@type": "Answer", "text": "KEF does not make a Windows version of KEF Connect. KEF Control for Windows is a free, unofficial desktop app that controls KEF W2 speakers (LSX II, LSX II LT, LS50 Wireless II, LS60, XIO, LS LUXE) from your PC over your home network."}},
+    {"@type": "Question", "name": "Can I control KEF LSX II LT speakers over USB?",
+     "acceptedAnswer": {"@type": "Answer", "text": "No. The USB-C port on the LSX II and LSX II LT is a USB sound card for audio only. Settings and volume are controlled over Wi-Fi, which is how KEF Connect works too. Set up Wi-Fi once in KEF Connect, then use KEF Control on your PC."}},
+    {"@type": "Question", "name": "Why does the speaker volume not change when I change the Windows volume?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Windows volume and the speaker's own volume are separate. For the best sound, keep Windows at 100% and change the speaker volume in KEF Control, from the tray icon, or with the remote."}},
+    {"@type": "Question", "name": "Can my KEF speakers turn on and off with my PC?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Yes. KEF Control can turn the speakers on when the PC starts or wakes and put them in standby when the PC sleeps or shuts down. It leaves them alone if you are playing from another input such as Bluetooth."}},
+    {"@type": "Question", "name": "Which KEF speakers are supported?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Speakers on KEF's W2 platform: LSX II, LSX II LT, LS50 Wireless II, LS60 Wireless, XIO and LS LUXE. The first-generation LSX and LS50 Wireless are not supported."}},
+    {"@type": "Question", "name": "Is KEF Control free and safe?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Yes. It is free and open source (MIT license). It only talks to your speakers on your local network and, if enabled, checks GitHub once a day for updates. No account, ads or tracking."}}
+  ]
+}
+</script>
+<style>
+  :root {
+    --bg: #0c0d0f; --panel: #15171a; --panel2: #1c1f23; --line: #262a2f; --text: #ecedef; --muted: #959aa1;
+    --accent: #e8572a; --accent2: #ff7a4d; --max: 1080px;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #f6f6f7; --panel: #ffffff; --panel2: #f0f0f2; --line: #e3e3e7; --text: #141518; --muted: #61656c; --accent: #d9481b; --accent2: #e8572a; }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif; }
+  a { color: var(--accent2); }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 22px; }
+  nav.top { display: flex; align-items: center; gap: 18px; padding: 18px 0; }
+  nav.top .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--text); text-decoration: none; margin-right: auto; }
+  nav.top .brand img { width: 30px; height: 30px; border-radius: 8px; }
+  nav.top a.l { color: var(--muted); text-decoration: none; font-size: 15px; }
+  nav.top a.l:hover { color: var(--text); }
+  .hero { display: grid; grid-template-columns: 1.05fr .95fr; gap: 44px; align-items: center; padding: 40px 0 56px; }
+  .eyebrow { display: inline-block; font-size: 13px; font-weight: 600; color: var(--accent2); background: color-mix(in srgb, var(--accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); padding: 4px 10px; border-radius: 999px; }
+  h1 { font-size: clamp(34px, 5vw, 52px); line-height: 1.08; margin: 16px 0 14px; letter-spacing: -0.02em; }
+  .lead { font-size: 19px; color: var(--muted); margin: 0 0 26px; }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; padding: 13px 22px; border-radius: 12px; font-weight: 650; text-decoration: none; border: 1px solid var(--line); color: var(--text); background: var(--panel); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 8px 28px color-mix(in srgb, var(--accent) 35%, transparent); }
+  .btn svg { width: 18px; height: 18px; }
+  .small { font-size: 13px; color: var(--muted); }
+  .shot { border-radius: 18px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 30px 80px #0007; background: var(--panel); }
+  .shot img { display: block; width: 100%; height: auto; }
+  .hero-shot { max-width: 380px; justify-self: center; transform: rotate(1.5deg); }
+  section { padding: 56px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: 30px; margin: 0 0 10px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 30px; max-width: 720px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 22px; }
+  .card h3 { margin: 10px 0 6px; font-size: 17px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .ico { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 14%, transparent); }
+  .ico svg { width: 20px; height: 20px; stroke: var(--accent2); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .shots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: start; }
+  .shots figure { margin: 0; }
+  .shots figcaption { text-align: center; color: var(--muted); font-size: 14px; margin-top: 10px; }
+  table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; font-size: 15px; }
+  th, td { padding: 12px 14px; border-bottom: 1px solid var(--line); text-align: left; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
+  td.y { color: #3ecf8e; font-weight: 700; } td.n { color: var(--muted); }
+  tr:last-child td { border-bottom: 0; }
+  ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+  ol.steps li { counter-increment: s; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px 16px 62px; position: relative; }
+  ol.steps li::before { content: counter(s); position: absolute; left: 18px; top: 15px; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+  details { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 10px; }
+  summary { cursor: pointer; font-weight: 650; }
+  details p { color: var(--muted); margin: 10px 0 0; }
+  footer { border-top: 1px solid var(--line); padding: 30px 0 50px; color: var(--muted); font-size: 14px; }
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; padding-top: 20px; }
+    .grid, .shots { grid-template-columns: 1fr; }
+    .hero-shot { transform: none; max-width: 320px; }
+    nav.top a.l { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="top">
+    <a class="brand" href="./"><img src="favicon.png" alt="" width="30" height="30">KEF Control</a>
+    <a class="l" href="#features">Features</a>
+    <a class="l" href="#install">Install</a>
+    <a class="l" href="#faq">FAQ</a>
+    <a class="l" href="https://github.com/jung1021/kef-control-app">GitHub</a>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <span class="eyebrow">Free · Open source · Windows 10 &amp; 11</span>
+      <h1>Control your KEF speakers from your PC</h1>
+      <p class="lead">KEF Control is a free Windows app for the <b>KEF LSX II, LSX II LT, LS50 Wireless II</b> and LS60. It's a desktop alternative to KEF Connect, so you can change volume, inputs and every sound setting without picking up your phone.</p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/jung1021/kef-control-app/releases/latest">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>Download for Windows</a>
+        <a class="btn" href="https://github.com/jung1021/kef-control-app">View on GitHub</a>
+      </div>
+      <p class="small" style="margin-top:14px">Version 1.3.0 · about 15 MB · no admin rights or account needed</p>
+    </div>
+    <div class="shot hero-shot"><img src="screenshots/home.png" alt="KEF Control app showing now playing, volume and input selection for a KEF LSX II LT" width="920" height="1640"></div>
+  </header>
+
+  <section id="features">
+    <h2>Everything KEF Connect does for PC speakers, and more</h2>
+    <p class="sub">Made for people who use their KEF speakers with a computer. It lives in the Windows tray and stays out of the way until you need it.</p>
+    <div class="grid">
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></div><h3>Volume, inputs, power</h3><p>Slider, mouse wheel, arrow keys and mute. Switch between USB, Optical, TV, Bluetooth and Wi-Fi in one click.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></div><h3>All sound settings</h3><p>Desk mode, wall mode, treble trim, bass extension, balance, phase correction and subwoofer settings.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h8V4M8 20v-6h8v6"/></svg></div><h3>Sound profiles</h3><p>Save setups like "Music", "Movies" and "Late night", then switch from the app or the tray icon.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.3 7.3a8 8 0 1 0 11.4 0"/></svg></div><h3>On and off with your PC</h3><p>Speakers wake when the PC starts or wakes, and go to standby when it sleeps or shuts down. Bluetooth listening is never cut off.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><h3>Now playing</h3><p>Track, artist, album art and play/pause/skip when you stream to the speakers over Wi-Fi or Bluetooth.</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="16" rx="2"/><rect x="14" y="4" width="7" height="16" rx="2"/><circle cx="6.5" cy="14" r="1.5"/><circle cx="17.5" cy="14" r="1.5"/></svg></div><h3>Multiple speakers</h3><p>Save several pairs, say desk and living room, and switch between them. Auto-reconnects if their IP address changes.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Screenshots</h2>
+    <p class="sub">Follows your Windows light or dark theme.</p>
+    <div class="shots">
+      <figure><div class="shot"><img src="screenshots/home.png" alt="KEF Control home screen with volume and inputs" loading="lazy" width="920" height="1640"></div><figcaption>Home</figcaption></figure>
+      <figure><div class="shot"><img src="screenshots/sound.png" alt="KEF LSX II LT sound settings and sound profiles in KEF Control" loading="lazy" width="920" height="1640"></div><figcaption>Sound and profiles</figcaption></figure>
+      <figure><div class="shot"><img src="screenshots/settings.png" alt="Power sync settings to turn KEF speakers on and off with the PC" loading="lazy" width="920" height="1640"></div><figcaption>Sync with your PC</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>How it compares</h2>
+    <p class="sub">KEF Connect is made for phones and tablets. KEF Control is made for the PC on your desk.</p>
+    <table>
+      <tr><th>Feature</th><th>KEF Control (Windows)</th><th>KEF Connect (phone)</th></tr>
+      <tr><td>Runs on Windows</td><td class="y">✓</td><td class="n">–</td></tr>
+      <tr><td>Volume, inputs, sound settings</td><td class="y">✓</td><td class="y">✓</td></tr>
+      <tr><td>Tray icon with quick controls</td><td class="y">✓</td><td class="n">–</td></tr>
+      <tr><td>Turn on/off with your PC</td><td class="y">✓</td><td class="n">–</td></tr>
+      <tr><td>No account needed</td><td class="y">✓</td><td class="n">–</td></tr>
+      <tr><td>First-time Wi-Fi setup, firmware updates, music streaming</td><td class="n">–</td><td class="y">✓</td></tr>
+    </table>
+  </section>
+
+  <section id="install">
+    <h2>Install in a minute</h2>
+    <ol class="steps">
+      <li><b>Connect the speakers to Wi-Fi once.</b> If you haven't already, use KEF Connect on any phone. USB carries the audio, while settings are changed over your home network.</li>
+      <li><b>Download and run the installer</b> from the <a href="https://github.com/jung1021/kef-control-app/releases/latest">latest release</a>. If Windows shows "Windows protected your PC", click <i>More info → Run anyway</i>. The installer isn't code-signed yet.</li>
+      <li><b>Open KEF Control</b> and click <i>Find speakers on my network</i>, or type the speaker's IP address. That's it.</li>
+    </ol>
+    <p class="small" style="margin-top:16px">Uninstall any time from <i>Settings → Apps → Installed apps → KEF Control</i>.</p>
+  </section>
+
+  <section id="faq">
+    <h2>Frequently asked questions</h2>
+    <details open><summary>Is there a KEF Connect app for Windows?</summary><p>KEF doesn't make a Windows version of KEF Connect. KEF Control is a free, unofficial desktop app that controls KEF W2 speakers (LSX II, LSX II LT, LS50 Wireless II, LS60, XIO, LS LUXE) from your PC over your home network.</p></details>
+    <details><summary>Can I control KEF LSX II LT speakers over USB?</summary><p>No. The USB-C port on the LSX II and LSX II LT is a USB sound card for audio only. Settings and volume are controlled over Wi-Fi, which is how KEF Connect works too. Set up Wi-Fi once in KEF Connect, then use KEF Control on your PC.</p></details>
+    <details><summary>Why doesn't the speaker volume change when I change the Windows volume?</summary><p>Windows volume and the speaker's own volume are separate. For the best sound, keep Windows at 100% and change the speaker volume in KEF Control, from the tray icon, or with the remote.</p></details>
+    <details><summary>Can my KEF speakers turn on and off with my PC?</summary><p>Yes. KEF Control can turn the speakers on when the PC starts or wakes and put them in standby when the PC sleeps or shuts down. It leaves them alone if you're playing from another input such as Bluetooth.</p></details>
+    <details><summary>Which KEF speakers are supported?</summary><p>Speakers on KEF's W2 platform: LSX II, LSX II LT, LS50 Wireless II, LS60 Wireless, XIO and LS LUXE. The first-generation LSX and LS50 Wireless aren't supported.</p></details>
+    <details><summary>Is KEF Control free and safe?</summary><p>Yes. It's free and open source under the MIT license. It only talks to your speakers on your local network and, if enabled, checks GitHub once a day for updates. No account, ads or tracking. You can read every line of the <a href="https://github.com/jung1021/kef-control-app">source code</a>.</p></details>
+    <details><summary>Something isn't working. Where do I get help?</summary><p>Open <i>Settings → App → Copy diagnostics</i> in KEF Control, then <a href="https://github.com/jung1021/kef-control-app/issues/new?template=bug_report.yml">report the problem on GitHub</a> and paste them in.</p></details>
+  </section>
+
+  <footer>
+    <p>KEF Control is free, open-source software (MIT). Not affiliated with or endorsed by KEF. KEF, LSX and related names are trademarks of KEF / GP Acoustics.</p>
+    <p><a href="https://github.com/jung1021/kef-control-app">GitHub</a> · <a href="https://github.com/jung1021/kef-control-app/releases">Releases</a> · <a href="https://github.com/jung1021/kef-control-app/issues">Report a problem</a> · <a href="privacy.html">Privacy</a></p>
+  </footer>
+</div>
+</body>
+</html>

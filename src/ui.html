@@ -9,6 +9,17 @@
     --bg: #0f1012; --panel: #17191c; --panel2: #1e2125; --line: #2a2e33;
     --text: #e9eaec; --muted: #8b9097; --accent: #e8572a; --accent2: #ff7a4d;
     --ok: #3ecf8e; --bad: #ef4444; --radius: 14px;
+    --hover: #444a52; --active-bg: #2a1a14; --toast: #2b2f35; --err-line: #7f1d1d; --err-text: #fecaca; --danger: #ff8a8a;
+    --thumb-shadow: 0 1px 4px #0008;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f4f4f5; --panel: #ffffff; --panel2: #f1f1f3; --line: #e2e2e6;
+      --text: #17181b; --muted: #6b6f76; --accent: #d9481b; --accent2: #e8572a;
+      --hover: #c9cad0; --active-bg: #fdebe4; --toast: #ffffff; --err-line: #fca5a5; --err-text: #991b1b; --danger: #c62828;
+      --thumb-shadow: 0 1px 3px #0004;
+    }
+    input[type=range]::-webkit-slider-thumb { border: 1px solid #d0d0d5; }
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
@@ -43,13 +54,13 @@
   .vol-num.muted { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 2px; }
   .vol-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
   .round { width: 40px; height: 40px; flex: none; border-radius: 50%; border: 1px solid var(--line); background: var(--panel2); cursor: pointer; font-size: 20px; display: grid; place-items: center; }
-  .round:hover { border-color: #444a52; }
+  .round:hover { border-color: var(--hover); }
   .round.active { background: var(--accent); border-color: var(--accent); }
   .round svg { width: 18px; height: 18px; stroke: currentColor; fill: none; }
   input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 28px; background: transparent; cursor: pointer; }
   input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px;
     background: linear-gradient(to right, var(--accent) var(--p, 0%), var(--line) var(--p, 0%)); }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: -6px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px #0008; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: -6px; border-radius: 50%; background: #fff; box-shadow: var(--thumb-shadow); }
   input[type=range]:disabled { opacity: .35; cursor: default; }
   input[type=range].center::-webkit-slider-runnable-track { background: var(--line); }
 
@@ -58,7 +69,7 @@
   .src { padding: 14px 6px 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel2); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--muted); font-weight: 600; font-size: 12px; transition: .12s; }
   .src svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.6; }
   .src:hover { color: var(--text); }
-  .src.active { border-color: var(--accent); color: var(--text); background: #2a1a14; }
+  .src.active { border-color: var(--accent); color: var(--text); background: var(--active-bg); }
   .src.active svg { stroke: var(--accent2); }
 
   /* rows */
@@ -84,9 +95,9 @@
   select:focus, input[type=text]:focus { border-color: var(--accent); }
   input[type=text] { user-select: text; }
   .btn { border: 1px solid var(--line); background: var(--panel2); border-radius: 10px; padding: 9px 14px; cursor: pointer; font-weight: 600; }
-  .btn:hover { border-color: #444a52; }
+  .btn:hover { border-color: var(--hover); }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .btn.danger { color: #ff8a8a; }
+  .btn.danger { color: var(--danger); }
   .btn:disabled { opacity: .5; cursor: default; }
   .btns { display: flex; gap: 8px; flex-wrap: wrap; }
   .muted { color: var(--muted); }
@@ -95,30 +106,54 @@
   .kv div:nth-child(even) { text-align: right; user-select: text; word-break: break-all; }
   .found { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
   .found button { text-align: left; }
-  .toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%) translateY(20px); background: #2b2f35; border: 1px solid var(--line);
+  .toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%) translateY(20px); background: var(--toast); border: 1px solid var(--line);
     padding: 10px 14px; border-radius: 10px; opacity: 0; transition: .2s; max-width: 90%; font-size: 13px; pointer-events: none; }
   .toast.show { opacity: 1; transform: translateX(-50%); }
-  .toast.err { border-color: #7f1d1d; color: #fecaca; }
+  .toast.err { border-color: var(--err-line); color: var(--err-text); }
   .offline { text-align: center; padding: 30px 10px; }
   .dim { opacity: .45; pointer-events: none; }
   .hint { font-size: 12px; color: var(--muted); margin-top: 10px; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
   .chip { border: 1px solid var(--line); background: var(--panel2); border-radius: 999px; padding: 7px 14px; cursor: pointer; font-weight: 600; font-size: 13px; color: var(--muted); }
   .chip:hover { color: var(--text); }
-  .chip.active { border-color: var(--accent); color: var(--text); background: #2a1a14; }
+  .chip.active { border-color: var(--accent); color: var(--text); background: var(--active-bg); }
   .chip .mod { color: var(--accent2); margin-left: 4px; }
   .prof-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); }
   .prof-row:first-child { border-top: 0; }
   .prof-row .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
   .prof-row .nm small { font-weight: 400; color: var(--muted); margin-left: 6px; }
   .icon-btn { border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; display: grid; place-items: center; color: var(--muted); flex: none; }
-  .icon-btn:hover { color: var(--text); border-color: #444a52; }
+  .icon-btn:hover { color: var(--text); border-color: var(--hover); }
   .icon-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; }
   .icon-btn:disabled { opacity: .3; cursor: default; }
   .btn.sm { padding: 6px 11px; font-size: 12px; }
   .subhead { font-size: 12px; color: var(--muted); font-weight: 600; margin: 14px 0 2px; }
   .log { font-size: 12px; color: var(--muted); margin-top: 8px; }
   .log div { padding: 2px 0; }
+  .title h1 button { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; max-width: 100%; }
+  .title h1 button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .title h1 button svg { width: 14px; height: 14px; stroke: var(--muted); fill: none; stroke-width: 2.4; flex: none; }
+  .menu { position: absolute; top: 58px; left: 14px; right: 70px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px #0006; z-index: 20; padding: 6px; }
+  .menu button { display: flex; width: 100%; align-items: center; gap: 10px; padding: 10px 12px; border: 0; background: transparent; border-radius: 8px; cursor: pointer; text-align: left; }
+  .menu button:hover { background: var(--panel2); }
+  .menu .chk { width: 16px; color: var(--accent2); font-weight: 700; }
+  .menu small { color: var(--muted); margin-left: auto; }
+  .menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 4px; }
+  .banner { display: flex; align-items: center; gap: 10px; background: var(--active-bg); border: 1px solid var(--accent); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; font-size: 13px; }
+  .banner b { flex: 1; font-weight: 600; }
+  .np { display: flex; gap: 14px; align-items: center; }
+  .np .art { width: 72px; height: 72px; border-radius: 10px; background: var(--panel2); flex: none; object-fit: cover; display: grid; place-items: center; overflow: hidden; }
+  .np .art svg { width: 30px; height: 30px; stroke: var(--muted); fill: none; stroke-width: 1.6; }
+  .np .meta { flex: 1; min-width: 0; }
+  .np .t { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .np .a { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .np-ctl { display: flex; justify-content: center; gap: 14px; margin-top: 12px; }
+  .np-ctl .round { width: 44px; height: 44px; }
+  .np-ctl .round.big { width: 52px; height: 52px; background: var(--accent); border-color: var(--accent); color: #fff; }
+  .np-ctl .round:disabled { opacity: .35; cursor: default; }
+  .prog { height: 4px; background: var(--line); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+  .prog div { height: 100%; background: var(--accent); width: 0; transition: width .5s linear; }
+  .times { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; font-variant-numeric: tabular-nums; }
   kbd { background: var(--panel2); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-size: 11px; }
 </style>
 </head>
@@ -126,13 +161,14 @@
 <div class="app">
   <header>
     <div class="title">
-      <h1 id="spkName">KEF Control</h1>
+      <h1><button id="spkBtn" title="Switch or add speakers"><span id="spkName">KEF Control</span><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button></h1>
       <div class="sub"><span id="dot" class="dot"></span><span id="spkSub">Not connected</span></div>
     </div>
     <button id="powerBtn" class="power" title="Power (standby)">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.3 7.3a8 8 0 1 0 11.4 0"/></svg>
     </button>
   </header>
+  <div class="menu hidden" id="spkMenu"></div>
   <nav id="nav">
     <button data-tab="home" class="active">Home</button>
     <button data-tab="sound">Sound</button>
@@ -142,13 +178,13 @@
     <!-- SETUP -->
     <section id="setup" class="hidden">
       <div class="card">
-        <h2>Connect to your speakers</h2>
+        <h2 id="setupTitle">Connect to your speakers</h2>
         <p class="muted" style="margin-top:0">Your KEF must be on the same network as this PC (set up Wi-Fi once in KEF Connect). USB carries audio only — control goes over the network.</p>
         <div style="display:flex; gap:8px">
           <input id="ipInput" type="text" placeholder="Speaker IP, e.g. 192.168.1.42" style="flex:1">
           <button id="connectBtn" class="btn primary">Connect</button>
         </div>
-        <div class="btns" style="margin-top:10px"><button id="findBtn" class="btn">Find speakers on my network</button></div>
+        <div class="btns" style="margin-top:10px"><button id="findBtn" class="btn">Find speakers on my network</button><button id="cancelAdd" class="btn hidden">Cancel</button></div>
         <div id="found" class="found"></div>
         <p class="hint">Tip: the IP is shown in KEF Connect → Settings → speaker → About, or in your router's device list. Giving the speaker a fixed (reserved) IP in your router keeps it from changing.</p>
       </div>
@@ -159,12 +195,26 @@
       <div class="card offline">
         <div style="font-size:15px; font-weight:600">Can't reach the speaker</div>
         <p class="muted" id="offlineMsg"></p>
-        <div class="btns" style="justify-content:center"><button class="btn" id="retryBtn">Retry</button><button class="btn" id="changeBtn">Change speaker</button></div>
+        <div class="btns" style="justify-content:center"><button class="btn" id="retryBtn">Retry</button><button class="btn" id="changeBtn">Remove speaker</button><button class="btn" id="offAdd">Add another</button></div>
       </div>
     </section>
 
     <!-- HOME -->
     <section id="tab-home" class="hidden">
+      <div class="banner hidden" id="updBanner"><b id="updText">Update available</b><button class="btn sm primary" id="updGet">Get it</button></div>
+      <div class="card hidden" id="npCard">
+        <h2>Now playing</h2>
+        <div class="np">
+          <div class="art" id="npArtBox"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+          <div class="meta"><div class="t" id="npTitle">–</div><div class="a" id="npArtist"></div><div class="a" id="npAlbum"></div></div>
+        </div>
+        <div id="npProgWrap"><div class="prog"><div id="npProg"></div></div><div class="times"><span id="npPos"></span><span id="npDur"></span></div></div>
+        <div class="np-ctl">
+          <button class="round" id="npPrev" title="Previous"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M19 20 9 12l10-8zM5 19V5"/></svg></button>
+          <button class="round big" id="npPlay" title="Play / pause"><svg viewBox="0 0 24 24" stroke-width="2" id="npPlayIcon"><path d="M7 4v16l13-8z"/></svg></button>
+          <button class="round" id="npNext" title="Next"><svg viewBox="0 0 24 24" stroke-width="2"><path d="m5 4 10 8-10 8zM19 5v14"/></svg></button>
+        </div>
+      </div>
       <div class="card vol" id="volCard">
         <h2 style="text-align:left">Volume</h2>
         <div id="volNum" class="vol-num">–</div>
@@ -259,9 +309,17 @@
         <h2>Speaker</h2>
         <div class="kv" id="infoKv"></div>
         <div class="btns" style="margin-top:14px">
-          <button class="btn" id="changeSpk">Change speaker</button>
+          <button class="btn" id="addSpk">Add another speaker</button>
+          <button class="btn" id="changeSpk">Remove this speaker</button>
           <button class="btn danger" id="rebootBtn">Restart speakers</button>
         </div>
+      </div>
+      <div class="card" id="appCard">
+        <h2>App</h2>
+        <div class="row"><div class="lbl">Check for updates automatically<small>Asks GitHub once a day whether a newer version exists. Nothing about you or your speakers is sent.</small></div><label class="switch"><input type="checkbox" id="chkUpd"><span></span></label></div>
+        <div class="row"><div class="lbl">Version <span id="appVer"></span><small id="updStatus"></small></div><button class="btn sm" id="updNow">Check now</button></div>
+        <div class="row"><div class="lbl">Having a problem?<small>Copy diagnostics, then paste them into a bug report so it can be fixed quickly.</small></div></div>
+        <div class="btns"><button class="btn" id="copyDiag">Copy diagnostics</button><button class="btn" id="reportBug">Report a problem</button><button class="btn" id="openSite">Website &amp; help</button></div>
       </div>
     </section>
   </main>
@@ -304,11 +362,18 @@ const SRC_ORDER = ["usb","optical","tv","bluetooth","wifi","analog","coaxial"];
 
 function show(id, on) { $(id).classList.toggle("hidden", !on); }
 function render() {
-  const configured = S && S.configured, connected = S && S.connected;
+  const configured = S && S.configured && !adding, connected = S && S.connected && !adding;
   show("#setup", !configured);
+  show("#cancelAdd", adding);
+  $("#setupTitle").textContent = adding ? "Add another speaker" : "Connect to your speakers";
   show("#offline", configured && !connected);
   $("#nav").classList.toggle("dim", !connected);
   for (const t of ["home","sound","settings"]) show("#tab-" + t, connected && tab === t);
+  // update banner
+  const up = S && S.update;
+  show("#updBanner", !!(connected && up && localStorage_get("dismiss") !== up.version));
+  if (up) $("#updText").textContent = `KEF Control ${up.version} is available`;
+  renderNowPlaying();
   $$("#nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
   const dot = $("#dot");
   dot.className = "dot " + (connected ? "ok" : configured ? "bad" : "");
@@ -320,7 +385,7 @@ function render() {
     $("#offlineMsg").textContent = (S.error || "") + " — check that the speakers are on and connected to Wi-Fi.";
     return;
   }
-  const model = (S.info && (S.info.model || "")).replace("LSXIILT","LSX II LT").replace("LSXII","LSX II");
+  const model = friendlyModel(S.info && S.info.model);
   $("#spkSub").textContent = S.on ? `${model} · ${SRC[S.source] ? SRC[S.source][0] : S.source}` : `${model} · Standby`;
   $("#powerBtn").classList.toggle("on", !!S.on);
   // volume
@@ -440,14 +505,104 @@ $("#nav").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   tab = b.dataset.tab; render();
   if (tab === "sound") { loadEq(); loadProfiles(); }
-  if (tab === "settings") { loadSettings(); loadPowerSync(); }
+  if (tab === "settings") { loadSettings(); loadPowerSync(); loadApp(); }
 });
+
+/* ---------------- speakers ---------------- */
+let adding = false;
+function localStorage_get(k) { try { return localStorage.getItem("kef." + k); } catch { return null; } }
+function localStorage_set(k, v) { try { localStorage.setItem("kef." + k, v); } catch {} }
+async function openSpkMenu() {
+  const m = $("#spkMenu");
+  if (!m.classList.contains("hidden")) { m.classList.add("hidden"); return; }
+  let d = { speakers: [] };
+  try { d = await api("speakers"); } catch {}
+  m.innerHTML = d.speakers.map(sp => `<button data-id="${esc(sp.id)}"><span class="chk">${sp.current ? "✓" : ""}</span>${esc(sp.name || sp.host)}<small>${esc(sp.host)}</small></button>`).join("")
+    + (d.speakers.length ? "<hr>" : "") + `<button data-act="add"><span class="chk">+</span>Add another speaker</button>`;
+  m.classList.remove("hidden");
+}
+$("#spkBtn").onclick = e => { e.stopPropagation(); openSpkMenu(); };
+document.addEventListener("click", e => { if (!e.target.closest("#spkMenu")) $("#spkMenu").classList.add("hidden"); });
+$("#spkMenu").addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  $("#spkMenu").classList.add("hidden");
+  if (b.dataset.act === "add") return startAdd();
+  try { await api("speakers/switch", { id: b.dataset.id }); eqData = setData = profData = null; tab = "home"; toast("Switched speaker"); await poll(); } catch (er) { fail(er); }
+});
+function startAdd() { adding = true; $("#ipInput").value = ""; $("#found").innerHTML = ""; render(); $("#ipInput").focus(); }
+$("#cancelAdd").onclick = () => { adding = false; render(); };
+$("#addSpk").onclick = startAdd;
+
+/* ---------------- now playing ---------------- */
+function fmtTime(ms) { if (ms == null) return ""; const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
+let lastCover = null;
+function renderNowPlaying() {
+  const p = S && S.connected && S.on && !adding ? S.playing : null;
+  const showCard = !!(p && (p.title || p.state === "playing" || p.state === "paused"));
+  show("#npCard", showCard);
+  if (!showCard) return;
+  $("#npTitle").textContent = p.title || (S.source === "bluetooth" ? "Bluetooth" : "Wi-Fi streaming");
+  $("#npArtist").textContent = p.artist || "";
+  $("#npAlbum").textContent = p.album || "";
+  if (p.cover !== lastCover) {
+    lastCover = p.cover;
+    const box = $("#npArtBox");
+    if (p.cover && /^https?:/i.test(p.cover)) {
+      const img = new Image(); img.className = "art"; img.alt = ""; img.referrerPolicy = "no-referrer";
+      img.onload = () => { box.innerHTML = ""; box.appendChild(img); };
+      img.src = p.cover;
+    } else box.innerHTML = '<svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
+  }
+  const hasDur = p.duration && !p.live;
+  show("#npProgWrap", !!hasDur);
+  if (hasDur) {
+    $("#npProg").style.width = Math.min(100, (p.position || 0) / p.duration * 100) + "%";
+    $("#npPos").textContent = fmtTime(p.position); $("#npDur").textContent = fmtTime(p.duration);
+  }
+  const playing = p.state === "playing";
+  $("#npPlayIcon").innerHTML = playing ? '<path d="M7 4h4v16H7zM13 4h4v16h-4z"/>' : '<path d="M7 4v16l13-8z"/>';
+  $("#npPlay").disabled = !(p.can && p.can.pause);
+  $("#npNext").disabled = !(p.can && p.can.next);
+  $("#npPrev").disabled = !(p.can && p.can.previous);
+}
+async function playback(action) { try { await api("playback", { action }); setTimeout(poll, 400); } catch (e) { fail(e); } }
+$("#npPlay").onclick = () => playback("playpause");
+$("#npNext").onclick = () => playback("next");
+$("#npPrev").onclick = () => playback("previous");
+
+/* ---------------- updates, diagnostics ---------------- */
+$("#updGet").onclick = () => { if (S && S.update) api("open", { url: S.update.url }).catch(fail); };
+$("#updBanner").addEventListener("dblclick", () => { if (S && S.update) { localStorage_set("dismiss", S.update.version); render(); } });
+async function loadApp() {
+  try {
+    const a = await api("app");
+    $("#chkUpd").checked = a.check_updates; $("#appVer").textContent = a.version + (a.store ? " (Microsoft Store)" : "");
+    $("#chkUpd").closest(".row").classList.toggle("hidden", !!a.store); $("#updNow").classList.toggle("hidden", !!a.store);
+    $("#updStatus").textContent = a.update ? `Version ${a.update.version} is available` : a.checked_at ? "You have the latest version" : "";
+    window._repo = a.repo;
+  } catch (e) { fail(e); }
+}
+$("#chkUpd").onchange = async e => { try { await api("app", { key: "check_updates", value: e.target.checked }); toast("Saved"); } catch (er) { fail(er); } };
+$("#updNow").onclick = async () => {
+  $("#updNow").disabled = true; $("#updStatus").textContent = "Checking…";
+  try { const a = await api("update/check", {}); $("#updStatus").textContent = a.update ? `Version ${a.update.version} is available` : "You have the latest version"; poll(); }
+  catch (e) { fail(e); } finally { $("#updNow").disabled = false; }
+};
+$("#copyDiag").onclick = async () => {
+  try {
+    const r = await fetch("/api/diagnostics"); const txt = await r.text();
+    await navigator.clipboard.writeText(txt); toast("Diagnostics copied - paste them into your bug report");
+  } catch (e) { fail(e); }
+};
+const REPO = () => window._repo || "jung1021/kef-control-app";
+$("#reportBug").onclick = () => api("open", { url: `https://github.com/${REPO()}/issues/new?template=bug_report.yml` }).catch(fail);
+$("#openSite").onclick = () => api("open", { url: `https://github.com/${REPO()}#readme` }).catch(fail);
 
 /* ---------------- setup ---------------- */
 $("#connectBtn").onclick = async () => {
   const host = $("#ipInput").value.trim(); if (!host) return;
   $("#connectBtn").disabled = true; $("#connectBtn").textContent = "Connecting…";
-  try { await api("connect", { host }); toast("Connected"); eqData = setData = null; await poll(); }
+  try { await api("connect", { host }); adding = false; toast("Connected"); eqData = setData = profData = null; tab = "home"; await poll(); }
   catch (e) { fail(e); }
   finally { $("#connectBtn").disabled = false; $("#connectBtn").textContent = "Connect"; }
 };
@@ -467,8 +622,11 @@ $("#findBtn").onclick = async () => {
 };
 function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 $("#retryBtn").onclick = poll;
-const changeSpeaker = async () => { await api("forget", {}); eqData = setData = null; tab = "home"; await poll(); };
-$("#changeBtn").onclick = changeSpeaker; $("#changeSpk").onclick = changeSpeaker;
+const changeSpeaker = async () => {
+  if (S && S.connected && !confirm("Remove this speaker from KEF Control? You can add it again later.")) return;
+  await api("forget", {}); eqData = setData = profData = null; tab = "home"; await poll();
+};
+$("#changeBtn").onclick = changeSpeaker; $("#offAdd").onclick = startAdd; $("#changeSpk").onclick = changeSpeaker;
 
 /* ---------------- power / source ---------------- */
 $("#powerBtn").onclick = async () => {
@@ -585,9 +743,12 @@ async function loadSettings() {
   if (!setData) show("#setLoading", true);
   try { setData = await api("settings"); renderSettings(); } catch (e) { $("#setLoading").textContent = "Couldn't load settings: " + e.message; }
 }
+function friendlyModel(m) {
+  return ({ LSXIILT: "LSX II LT", LSXII: "LSX II", LS50WII: "LS50 Wireless II", LS60W: "LS60 Wireless", XIO: "XIO", LUXE: "LS LUXE" })[m] || m || "";
+}
 function renderInfo() {
   const i = (S && S.info) || {}, d = i.device || {};
-  const rows = [["Name", d.name], ["Model", d.model_name || i.model], ["Firmware", i.firmware || d.firmware_version], ["IP address", i.host],
+  const rows = [["Name", d.name], ["Model", friendlyModel(i.model) + (d.model_name && d.model_name !== i.model ? ` (${d.model_name})` : "")], ["Firmware", i.firmware || d.firmware_version], ["IP address", i.host],
     ["Connection", i.secure ? "Secure (HTTPS)" : i.secure === false ? "HTTP" : "—"], ["MAC", d.mac_address], ["Serial", d.serial_number]];
   $("#infoKv").innerHTML = rows.filter(r => r[1]).map(([k, v]) => `<div>${k}</div><div>${esc(v)}</div>`).join("");
 }

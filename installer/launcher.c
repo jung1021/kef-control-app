@@ -35,6 +35,10 @@ int WINAPI wWinMain(HINSTANCE h, HINSTANCE p, LPWSTR cmd, int show) {
     SetEnvironmentVariableW(L"PYTHONDONTWRITEBYTECODE", NULL);
 
     const wchar_t *args = skip_argv0(GetCommandLineW());
+#ifdef DEFAULT_ARGS
+    /* Variant used as the Store "startup task": start in the tray without a window. */
+    if (!*args) args = DEFAULT_ARGS;
+#endif
     size_t len = wcslen(py) + wcslen(script) + wcslen(args) + 16;
     wchar_t *line = (wchar_t *)HeapAlloc(GetProcessHeap(), 0, len * sizeof(wchar_t));
     if (!line) return 3;

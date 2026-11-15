@@ -6,3 +6,7 @@ installer/cache/
 installer/*.exe
 installer/*.res
 dist/
+
+# packaging build output
+packaging/msix/layout/
+*.msix

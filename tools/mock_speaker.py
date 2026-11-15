@@ -1,5 +1,11 @@
-"""Fake KEF LSX II LT HTTP API (port 80) for testing KEF Control."""
+"""Fake KEF LSX II LT local API for testing KEF Control without real speakers.
+
+Usage:  python mock_speaker.py [bind-ip] [speaker-name] [mac]
+        (default 127.0.0.1, "Desk Speakers", 84:17:15:00:11:22; listens on port 80)
+"""
 import json
+import sys
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
@@ -31,6 +37,12 @@ STORE = {
     "settings:/kef/host/usbCharging": t("bool_", True),
     "settings:/kef/host/masterChannelMode": t("kefMasterChannelMode", "right"),
     "settings:/kef/host/subwooferForceOn": t("bool_", False),
+    "player:player/data": t("playerData", {
+        "state": "playing",
+        "trackRoles": {"title": "Midnight City", "icon": "",
+                       "mediaData": {"metaData": {"artist": "M83", "album": "Hurry Up, We're Dreaming"},
+                                     "resources": [{"duration": 243000, "codec": "flac"}]}},
+        "controls": {"pause": True, "next_": True, "previous": True, "seekTime": True}}),
     "kef:eqProfile/v2": t("kefEqProfileV2", {
         "profileName": "", "profileId": "", "isExpertMode": False, "balance": 0,
         "deskMode": True, "deskModeSetting": -3.0, "wallMode": False, "wallModeSetting": 0.0,
@@ -51,6 +63,8 @@ class H(BaseHTTPRequestHandler):
         u = urlparse(self.path); q = parse_qs(u.query)
         if u.path == "/api/getData":
             p = q["path"][0]
+            if p == "player:player/data/playTime":
+                return self._j(200, [t("i64_", int(time.time() * 1000) % 243000)])
             if p in STORE: return self._j(200, [STORE[p]])
             return self._j(500, {"error": {"name": "invalidPath", "message": f"Node at path '{p}' does not exist"}})
         if u.path == "/api/getRows":
@@ -61,6 +75,12 @@ class H(BaseHTTPRequestHandler):
         LOG.append(b); print("SET", json.dumps(b), flush=True)
         p = b["path"]
         if b.get("role") == "activate":
+            ctl = (b.get("value") or {}).get("control")
+            pd = STORE["player:player/data"]["playerData"]
+            if ctl == "pause":
+                pd["state"] = "paused" if pd["state"] == "playing" else "playing"
+            elif ctl == "next":
+                pd["trackRoles"]["title"] = "Wait"
             return self._j(200, {})
         if p in STORE or p.startswith("settings:"):
             STORE[p] = b["value"]
@@ -71,4 +91,9 @@ class H(BaseHTTPRequestHandler):
             STORE[p] = b["value"]; return self._j(200, {})
         self._j(500, {"error": {"message": "bad path"}})
 
-ThreadingHTTPServer(("127.0.0.1", 80), H).serve_forever()
+BIND = sys.argv[1] if len(sys.argv) > 1 else "127.0.0.1"
+if len(sys.argv) > 2:
+    STORE["settings:/deviceName"] = t("string_", sys.argv[2])
+if len(sys.argv) > 3:
+    STORE["settings:/system/primaryMacAddress"] = t("string_", sys.argv[3])
+ThreadingHTTPServer((BIND, 80), H).serve_forever()
