@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>KEF Control</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #0f1012; --panel: #17191c; --panel2: #1e2125; --line: #2a2e33;
+    --text: #e9eaec; --muted: #8b9097; --accent: #e8572a; --accent2: #ff7a4d;
+    --ok: #3ecf8e; --bad: #ef4444; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 14px/1.4 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; user-select: none; }
+  button { font: inherit; color: inherit; }
+  button:focus:not(:focus-visible) { outline: none; }
+  :focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+  .app { display: flex; flex-direction: column; height: 100%; }
+  header { display: flex; align-items: center; gap: 12px; padding: 16px 18px 10px; }
+  .title { flex: 1; min-width: 0; }
+  .title h1 { margin: 0; font-size: 17px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .title .sub { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 6px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); display: inline-block; }
+  .dot.ok { background: var(--ok); } .dot.bad { background: var(--bad); }
+  .power { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel2);
+    display: grid; place-items: center; cursor: pointer; transition: .15s; }
+  .power svg { width: 20px; height: 20px; stroke: var(--muted); }
+  .power.on { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 24px #e8572a55; }
+  .power.on svg { stroke: #fff; }
+  nav { display: flex; gap: 4px; padding: 0 14px 10px; }
+  nav button { flex: 1; padding: 9px 0; border: 0; border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; font-weight: 600; }
+  nav button.active { background: var(--panel2); color: var(--text); }
+  main { flex: 1; overflow-y: auto; padding: 4px 14px 24px; }
+  main::-webkit-scrollbar { width: 8px; } main::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+  .card h2 { margin: 0 0 12px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .hidden { display: none !important; }
+
+  /* volume */
+  .vol { text-align: center; }
+  .vol-num { font-size: 64px; font-weight: 300; line-height: 1; font-variant-numeric: tabular-nums; margin: 6px 0 2px; }
+  .vol-num.muted { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 2px; }
+  .vol-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+  .round { width: 40px; height: 40px; flex: none; border-radius: 50%; border: 1px solid var(--line); background: var(--panel2); cursor: pointer; font-size: 20px; display: grid; place-items: center; }
+  .round:hover { border-color: #444a52; }
+  .round.active { background: var(--accent); border-color: var(--accent); }
+  .round svg { width: 18px; height: 18px; stroke: currentColor; fill: none; }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 28px; background: transparent; cursor: pointer; }
+  input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px;
+    background: linear-gradient(to right, var(--accent) var(--p, 0%), var(--line) var(--p, 0%)); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: -6px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px #0008; }
+  input[type=range]:disabled { opacity: .35; cursor: default; }
+  input[type=range].center::-webkit-slider-runnable-track { background: var(--line); }
+
+  /* sources */
+  .sources { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .src { padding: 14px 6px 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel2); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--muted); font-weight: 600; font-size: 12px; transition: .12s; }
+  .src svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+  .src:hover { color: var(--text); }
+  .src.active { border-color: var(--accent); color: var(--text); background: #2a1a14; }
+  .src.active svg { stroke: var(--accent2); }
+
+  /* rows */
+  .row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .row:first-of-type { border-top: 0; padding-top: 0; }
+  .row .lbl { flex: 1; min-width: 0; }
+  .row .lbl small { display: block; color: var(--muted); font-size: 12px; }
+  .row .val { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
+  .slider-row { padding: 9px 0 4px; border-top: 1px solid var(--line); }
+  .slider-row:first-of-type { border-top: 0; padding-top: 0; }
+  .slider-row .top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .slider-row .ends { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; margin-top: -4px; }
+  .switch { position: relative; width: 42px; height: 24px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .switch span { position: absolute; inset: 0; background: var(--line); border-radius: 12px; cursor: pointer; transition: .15s; }
+  .switch span::after { content: ""; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: .15s; }
+  .switch input:checked + span { background: var(--accent); }
+  .switch input:checked + span::after { transform: translateX(18px); }
+  .seg { display: flex; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; }
+  .seg button { flex: 1; border: 0; background: transparent; padding: 7px 10px; border-radius: 7px; color: var(--muted); cursor: pointer; font-weight: 600; font-size: 12px; white-space: nowrap; }
+  .seg button.active { background: var(--accent); color: #fff; }
+  select, input[type=text] { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; font: inherit; outline: none; }
+  select:focus, input[type=text]:focus { border-color: var(--accent); }
+  input[type=text] { user-select: text; }
+  .btn { border: 1px solid var(--line); background: var(--panel2); border-radius: 10px; padding: 9px 14px; cursor: pointer; font-weight: 600; }
+  .btn:hover { border-color: #444a52; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.danger { color: #ff8a8a; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .muted { color: var(--muted); }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13px; }
+  .kv div:nth-child(odd) { color: var(--muted); }
+  .kv div:nth-child(even) { text-align: right; user-select: text; word-break: break-all; }
+  .found { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .found button { text-align: left; }
+  .toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%) translateY(20px); background: #2b2f35; border: 1px solid var(--line);
+    padding: 10px 14px; border-radius: 10px; opacity: 0; transition: .2s; max-width: 90%; font-size: 13px; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%); }
+  .toast.err { border-color: #7f1d1d; color: #fecaca; }
+  .offline { text-align: center; padding: 30px 10px; }
+  .dim { opacity: .45; pointer-events: none; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 10px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 1px solid var(--line); background: var(--panel2); border-radius: 999px; padding: 7px 14px; cursor: pointer; font-weight: 600; font-size: 13px; color: var(--muted); }
+  .chip:hover { color: var(--text); }
+  .chip.active { border-color: var(--accent); color: var(--text); background: #2a1a14; }
+  .chip .mod { color: var(--accent2); margin-left: 4px; }
+  .prof-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); }
+  .prof-row:first-child { border-top: 0; }
+  .prof-row .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .prof-row .nm small { font-weight: 400; color: var(--muted); margin-left: 6px; }
+  .icon-btn { border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; display: grid; place-items: center; color: var(--muted); flex: none; }
+  .icon-btn:hover { color: var(--text); border-color: #444a52; }
+  .icon-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .icon-btn:disabled { opacity: .3; cursor: default; }
+  .btn.sm { padding: 6px 11px; font-size: 12px; }
+  .subhead { font-size: 12px; color: var(--muted); font-weight: 600; margin: 14px 0 2px; }
+  .log { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .log div { padding: 2px 0; }
+  kbd { background: var(--panel2); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="title">
+      <h1 id="spkName">KEF Control</h1>
+      <div class="sub"><span id="dot" class="dot"></span><span id="spkSub">Not connected</span></div>
+    </div>
+    <button id="powerBtn" class="power" title="Power (standby)">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.3 7.3a8 8 0 1 0 11.4 0"/></svg>
+    </button>
+  </header>
+  <nav id="nav">
+    <button data-tab="home" class="active">Home</button>
+    <button data-tab="sound">Sound</button>
+    <button data-tab="settings">Settings</button>
+  </nav>
+  <main>
+    <!-- SETUP -->
+    <section id="setup" class="hidden">
+      <div class="card">
+        <h2>Connect to your speakers</h2>
+        <p class="muted" style="margin-top:0">Your KEF must be on the same network as this PC (set up Wi-Fi once in KEF Connect). USB carries audio only — control goes over the network.</p>
+        <div style="display:flex; gap:8px">
+          <input id="ipInput" type="text" placeholder="Speaker IP, e.g. 192.168.1.42" style="flex:1">
+          <button id="connectBtn" class="btn primary">Connect</button>
+        </div>
+        <div class="btns" style="margin-top:10px"><button id="findBtn" class="btn">Find speakers on my network</button></div>
+        <div id="found" class="found"></div>
+        <p class="hint">Tip: the IP is shown in KEF Connect → Settings → speaker → About, or in your router's device list. Giving the speaker a fixed (reserved) IP in your router keeps it from changing.</p>
+      </div>
+    </section>
+
+    <!-- OFFLINE -->
+    <section id="offline" class="hidden">
+      <div class="card offline">
+        <div style="font-size:15px; font-weight:600">Can't reach the speaker</div>
+        <p class="muted" id="offlineMsg"></p>
+        <div class="btns" style="justify-content:center"><button class="btn" id="retryBtn">Retry</button><button class="btn" id="changeBtn">Change speaker</button></div>
+      </div>
+    </section>
+
+    <!-- HOME -->
+    <section id="tab-home" class="hidden">
+      <div class="card vol" id="volCard">
+        <h2 style="text-align:left">Volume</h2>
+        <div id="volNum" class="vol-num">–</div>
+        <div class="vol-row">
+          <button class="round" id="volDown" title="Volume down (↓)">−</button>
+          <input id="volSlider" type="range" min="0" max="100" step="1" value="0">
+          <button class="round" id="volUp" title="Volume up (↑)">+</button>
+          <button class="round" id="muteBtn" title="Mute (M)">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path id="muteWave" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/><path id="muteX" class="hidden" d="m16 9 6 6m0-6-6 6"/></svg>
+          </button>
+        </div>
+        <p class="hint" style="text-align:left">Keys: <kbd>↑</kbd>/<kbd>↓</kbd> volume · <kbd>M</kbd> mute. For best quality keep Windows volume at 100% and use this volume.</p>
+      </div>
+      <div class="card">
+        <h2>Source</h2>
+        <div id="sources" class="sources"></div>
+      </div>
+      <div class="card hidden" id="homeProfiles">
+        <h2>Sound profile</h2>
+        <div class="chips" id="homeChips"></div>
+      </div>
+    </section>
+
+    <!-- SOUND -->
+    <section id="tab-sound" class="hidden">
+      <div id="eqLoading" class="card muted">Loading sound settings…</div>
+      <div id="eqBody" class="hidden">
+        <div class="card" id="profCard">
+          <h2>Sound profiles</h2>
+          <p class="muted" style="margin:0 0 10px; font-size:13px">A profile saves the settings on this page (placement, treble, bass extension, balance, phase correction, subwoofer gain) so you can switch between them in one click, here or from the tray icon.</p>
+          <div id="profList"></div>
+          <div id="profEmpty" class="muted hidden" style="font-size:13px; padding:4px 0 2px">No profiles yet. Set things up the way you like, then save them as a profile.</div>
+          <div style="display:flex; gap:8px; margin-top:12px">
+            <input id="profName" type="text" placeholder="New profile name, e.g. Movies" maxlength="40" style="flex:1">
+            <button class="btn primary" id="profSave">Save current</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Placement</h2>
+          <div class="row"><div class="lbl">Desk mode<small>Compensates for a desk or table under the speakers</small></div><label class="switch"><input type="checkbox" data-eq="desk_mode"><span></span></label></div>
+          <div class="slider-row" data-dep="desk_mode"><div class="top"><span class="muted">Desk mode amount</span><span class="val" data-val="desk_mode_setting"></span></div><input type="range" data-eq="desk_mode_setting"></div>
+          <div class="row"><div class="lbl">Wall mode<small>Reduces boomy bass when close to a wall</small></div><label class="switch"><input type="checkbox" data-eq="wall_mode"><span></span></label></div>
+          <div class="slider-row" data-dep="wall_mode"><div class="top"><span class="muted">Wall mode amount</span><span class="val" data-val="wall_mode_setting"></span></div><input type="range" data-eq="wall_mode_setting"></div>
+        </div>
+        <div class="card">
+          <h2>Tone</h2>
+          <div class="slider-row"><div class="top"><span>Treble trim</span><span class="val" data-val="treble"></span></div><input type="range" class="center" data-eq="treble"></div>
+          <div class="row" style="display:block"><div style="margin-bottom:8px">Bass extension</div><div class="seg" data-eq-seg="bass_extension"><button data-v="less">Less</button><button data-v="standard">Standard</button><button data-v="extra">Extra</button></div></div>
+          <div class="slider-row"><div class="top"><span>Balance</span><span class="val" data-val="balance"></span></div><input type="range" class="center" data-eq="balance"><div class="ends"><span>Left</span><span>Right</span></div></div>
+          <div class="row"><div class="lbl">Phase correction</div><label class="switch"><input type="checkbox" data-eq="phase_correction"><span></span></label></div>
+        </div>
+        <div class="card">
+          <h2>Subwoofer</h2>
+          <div class="row"><div class="lbl">Subwoofer output</div><label class="switch"><input type="checkbox" data-eq="subwoofer_out"><span></span></label></div>
+          <div data-dep="subwoofer_out">
+            <div class="row"><div class="lbl">Subwoofer model</div><select data-eq-select="subwoofer_preset"></select></div>
+            <div class="slider-row"><div class="top"><span>Subwoofer gain</span><span class="val" data-val="subwoofer_gain"></span></div><input type="range" class="center" data-eq="subwoofer_gain"></div>
+            <div class="slider-row"><div class="top"><span>Sub low-pass</span><span class="val" data-val="sub_out_low_pass_freq"></span></div><input type="range" data-eq="sub_out_low_pass_freq"></div>
+            <div class="row"><div class="lbl">Subwoofer polarity</div><div class="seg" data-eq-seg="subwoofer_polarity"><button data-v="normal">Normal</button><button data-v="inverted">Inverted</button></div></div>
+            <div class="row"><div class="lbl">Stereo subwoofers</div><label class="switch"><input type="checkbox" data-eq="sub_stereo"><span></span></label></div>
+            <div class="row"><div class="lbl">Speaker high-pass<small>Cut the deepest bass from the speakers</small></div><label class="switch"><input type="checkbox" data-eq="high_pass_mode"><span></span></label></div>
+            <div class="slider-row" data-dep="high_pass_mode"><div class="top"><span class="muted">High-pass frequency</span><span class="val" data-val="high_pass_freq"></span></div><input type="range" data-eq="high_pass_freq"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Advanced</h2>
+          <div class="row"><div class="lbl">Speaker polarity</div><div class="seg" data-eq-seg="audio_polarity"><button data-v="normal">Normal</button><button data-v="inverted">Inverted</button></div></div>
+          <div class="row"><div class="lbl">Reset all sound settings<small>Back to KEF defaults</small></div><button class="btn danger" id="eqReset">Reset</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="tab-settings" class="hidden">
+      <div id="setLoading" class="card muted">Loading settings…</div>
+      <div class="card" id="psCard">
+        <h2>Sync with this PC</h2>
+        <div class="row"><div class="lbl">Turn the speakers on and off with this PC<small>Uses Windows sleep, wake, lock and shutdown events. Nothing runs in between.</small></div><label class="switch"><input type="checkbox" data-ps="enabled"><span></span></label></div>
+        <div id="psBody">
+          <div class="subhead">Turn the speakers on</div>
+          <div id="psOn"></div>
+          <div class="subhead">Put the speakers in standby</div>
+          <div id="psOff"></div>
+          <div class="subhead">Options</div>
+          <div id="psOpt"></div>
+          <div class="log" id="psLog"></div>
+        </div>
+        <div class="hint hidden" id="psUnsupported">Power sync works in the Windows version of KEF Control.</div>
+      </div>
+      <div id="setBody"></div>
+      <div class="card">
+        <h2>Speaker</h2>
+        <div class="kv" id="infoKv"></div>
+        <div class="btns" style="margin-top:14px">
+          <button class="btn" id="changeSpk">Change speaker</button>
+          <button class="btn danger" id="rebootBtn">Restart speakers</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+const $ = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => [...el.querySelectorAll(s)];
+
+async function api(path, body) {
+  const opt = body === undefined ? {} : { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body) };
+  const r = await fetch("/api/" + path, opt);
+  let data = null; try { data = await r.json(); } catch {}
+  if (!r.ok) throw new Error((data && data.error) || r.statusText);
+  return data;
+}
+let toastT;
+function toast(msg, err=false) {
+  const t = $("#toast"); t.textContent = msg; t.className = "toast show" + (err ? " err" : "");
+  clearTimeout(toastT); toastT = setTimeout(() => t.className = "toast" + (err ? " err" : ""), err ? 4500 : 1800);
+}
+const fail = e => toast(e.message || String(e), true);
+function setFill(r) {
+  const p = (r.value - r.min) / (r.max - r.min) * 100; r.style.setProperty("--p", p + "%");
+}
+
+/* ---------------- state ---------------- */
+let S = null, tab = "home", volDragging = false, volSentAt = 0, eqData = null, setData = null;
+const SRC = {
+  usb:       ["USB",       '<rect x="7" y="2" width="10" height="7" rx="1"/><path d="M5 9h14v5a7 7 0 0 1-14 0z"/><path d="M12 21v-3"/>'],
+  optical:   ["Optical",   '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/>'],
+  tv:        ["TV",        '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>'],
+  bluetooth: ["Bluetooth", '<path d="m7 7 10 10-5 4V3l5 4L7 17"/>'],
+  wifi:      ["Wi-Fi",     '<path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r=".8"/>'],
+  analog:    ["Analogue",  '<path d="M4 12h6M14 8v8M18 6v12M10 9v6"/>'],
+  coaxial:   ["Coaxial",   '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1.5"/>'],
+};
+const SRC_ORDER = ["usb","optical","tv","bluetooth","wifi","analog","coaxial"];
+
+function show(id, on) { $(id).classList.toggle("hidden", !on); }
+function render() {
+  const configured = S && S.configured, connected = S && S.connected;
+  show("#setup", !configured);
+  show("#offline", configured && !connected);
+  $("#nav").classList.toggle("dim", !connected);
+  for (const t of ["home","sound","settings"]) show("#tab-" + t, connected && tab === t);
+  $$("#nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  const dot = $("#dot");
+  dot.className = "dot " + (connected ? "ok" : configured ? "bad" : "");
+  if (!configured) { $("#spkName").textContent = "KEF Control"; $("#spkSub").textContent = "Not connected"; $("#powerBtn").classList.remove("on"); return; }
+  const dev = (S.info && S.info.device) || {};
+  $("#spkName").textContent = dev.name || "KEF speaker";
+  if (!connected) {
+    $("#spkSub").textContent = "Offline · " + (S.host || "");
+    $("#offlineMsg").textContent = (S.error || "") + " — check that the speakers are on and connected to Wi-Fi.";
+    return;
+  }
+  const model = (S.info && (S.info.model || "")).replace("LSXIILT","LSX II LT").replace("LSXII","LSX II");
+  $("#spkSub").textContent = S.on ? `${model} · ${SRC[S.source] ? SRC[S.source][0] : S.source}` : `${model} · Standby`;
+  $("#powerBtn").classList.toggle("on", !!S.on);
+  // volume
+  if (!volDragging && Date.now() - volSentAt > 1200) {
+    $("#volSlider").value = S.volume; setFill($("#volSlider"));
+    $("#volNum").textContent = S.volume;
+  }
+  $("#volNum").classList.toggle("muted", !!S.muted);
+  $("#muteBtn").classList.toggle("active", !!S.muted);
+  $("#muteWave").classList.toggle("hidden", !!S.muted); $("#muteX").classList.toggle("hidden", !S.muted);
+  // sources
+  const list = (S.info && S.info.sources && S.info.sources.length) ? S.info.sources : SRC_ORDER;
+  const order = SRC_ORDER.filter(s => list.includes(s));
+  const box = $("#sources");
+  if (box.dataset.k !== order.join()) {
+    box.dataset.k = order.join();
+    box.innerHTML = order.map(s => `<button class="src" data-src="${s}"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">${SRC[s][1]}</svg>${SRC[s][0]}</button>`).join("");
+  }
+  $$(".src", box).forEach(b => b.classList.toggle("active", S.on && b.dataset.src === S.source));
+}
+
+/* ---------------- profiles ---------------- */
+let profData = null;
+const ICON = {
+  up: '<svg viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg>',
+  down: '<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>',
+  edit: '<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>',
+  save: '<svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h8V4M8 20v-6h8v6"/></svg>',
+  del: '<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
+};
+async function loadProfiles() {
+  try { profData = await api("profiles"); renderProfiles(); } catch (e) { /* speaker offline */ }
+}
+function renderProfiles() {
+  if (!profData) return;
+  const list = profData.profiles, act = profData.active;
+  show("#profEmpty", !list.length);
+  $("#profList").innerHTML = list.map((p, i) => {
+    const isAct = p.name === act;
+    const tag = isAct ? `<small>${profData.modified ? "active · changed" : "active"}</small>` : "";
+    return `<div class="prof-row" data-name="${esc(p.name)}">
+      <div class="nm">${esc(p.name)}${tag}</div>
+      <button class="btn sm ${isAct ? "" : "primary"}" data-act="apply">${isAct ? "Re-apply" : "Apply"}</button>
+      <button class="icon-btn" data-act="update" title="Save the current settings into this profile">${ICON.save}</button>
+      <button class="icon-btn" data-act="rename" title="Rename">${ICON.edit}</button>
+      <button class="icon-btn" data-act="up" title="Move up" ${i === 0 ? "disabled" : ""}>${ICON.up}</button>
+      <button class="icon-btn" data-act="del" title="Delete">${ICON.del}</button>
+    </div>`;
+  }).join("");
+  // home chips
+  show("#homeProfiles", list.length > 0);
+  $("#homeChips").innerHTML = list.map(p => `<button class="chip ${p.name === act ? "active" : ""}" data-name="${esc(p.name)}">${esc(p.name)}${p.name === act && profData.modified ? '<span class="mod" title="Changed since applied">•</span>' : ""}</button>`).join("");
+}
+async function applyProfile(name) {
+  try { profData = await api("profiles/apply", { name }); renderProfiles(); toast(`"${name}" applied`); eqData = null; if (tab === "sound") loadEq(); }
+  catch (e) { fail(e); }
+}
+$("#homeChips").addEventListener("click", e => { const b = e.target.closest(".chip"); if (b) applyProfile(b.dataset.name); });
+$("#profSave").onclick = async () => {
+  const name = $("#profName").value.trim();
+  if (!name) { $("#profName").focus(); toast("Type a name for the profile first"); return; }
+  try { profData = await api("profiles/save", { name }); $("#profName").value = ""; renderProfiles(); toast(`Saved "${name}"`); }
+  catch (e) {
+    if (/already exists/.test(e.message) && confirm(e.message + " Replace it with the current settings?")) {
+      try { profData = await api("profiles/save", { name, overwrite: true }); $("#profName").value = ""; renderProfiles(); toast(`Updated "${name}"`); } catch (e2) { fail(e2); }
+    } else fail(e);
+  }
+};
+$("#profName").addEventListener("keydown", e => { if (e.key === "Enter") $("#profSave").click(); });
+$("#profList").addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const name = b.closest(".prof-row").dataset.name, act = b.dataset.act;
+  try {
+    if (act === "apply") return applyProfile(name);
+    if (act === "update") { if (!confirm(`Replace "${name}" with the current settings?`)) return; profData = await api("profiles/save", { name, overwrite: true }); toast(`Updated "${name}"`); }
+    if (act === "rename") { const n = prompt("New name for this profile:", name); if (!n || n === name) return; profData = await api("profiles/rename", { name, new: n }); }
+    if (act === "up") profData = await api("profiles/move", { name, delta: -1 });
+    if (act === "del") { if (!confirm(`Delete the profile "${name}"?`)) return; profData = await api("profiles/delete", { name }); }
+    renderProfiles();
+  } catch (er) { fail(er); }
+});
+
+/* ---------------- power sync ---------------- */
+let psData = null;
+const PS_GROUPS = { psOn: ["on_startup", "on_wake", "on_unlock", "on_display"], psOff: ["off_sleep", "off_shutdown", "off_lock", "off_display"], psOpt: ["use_usb", "only_usb"] };
+const EVT = { startup: "PC started", wake: "PC woke up", unlock: "Unlocked", display_on: "Display on", sleep: "PC went to sleep", shutdown: "Shutdown", lock: "Locked", display_off: "Display off" };
+async function loadPowerSync() {
+  try { psData = await api("powersync"); renderPowerSync(); } catch (e) { fail(e); }
+}
+function renderPowerSync() {
+  const st = psData.settings, L = psData.labels;
+  $("[data-ps=enabled]").checked = st.enabled;
+  for (const [id, keys] of Object.entries(PS_GROUPS))
+    $("#" + id).innerHTML = keys.map(k => `<div class="row"><div class="lbl">${esc(L[k])}</div><label class="switch"><input type="checkbox" data-ps="${k}" ${st[k] ? "checked" : ""}><span></span></label></div>`).join("");
+  $("#psBody").classList.toggle("dim", !st.enabled);
+  show("#psUnsupported", !psData.supported);
+  $("#psLog").innerHTML = psData.log.length ? "<div><b>Recent</b></div>" + psData.log.slice().reverse().map(x => `<div>${new Date(x.time * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"})} · ${esc(EVT[x.event] || x.event)} → ${esc(x.result)}</div>`).join("") : "";
+}
+$("#psCard").addEventListener("change", async e => {
+  const k = e.target.dataset.ps; if (!k) return;
+  try { psData = await api("powersync", { key: k, value: e.target.checked }); renderPowerSync(); toast("Saved"); } catch (er) { fail(er); }
+});
+
+async function poll() {
+  const prevProfile = S && S.profile, prevConnected = S && S.connected;
+  try { S = await api("state"); } catch (e) { S = { configured: true, connected: false, error: "KEF Control background process is not responding" }; }
+  render();
+  if (S && S.connected && (!prevConnected || S.profile !== prevProfile || !profData)) loadProfiles();
+}
+setInterval(poll, 2000);
+poll();
+window.addEventListener("pagehide", () => navigator.sendBeacon("/api/bye", "{}"));
+document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
+
+/* ---------------- tabs ---------------- */
+$("#nav").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  tab = b.dataset.tab; render();
+  if (tab === "sound") { loadEq(); loadProfiles(); }
+  if (tab === "settings") { loadSettings(); loadPowerSync(); }
+});
+
+/* ---------------- setup ---------------- */
+$("#connectBtn").onclick = async () => {
+  const host = $("#ipInput").value.trim(); if (!host) return;
+  $("#connectBtn").disabled = true; $("#connectBtn").textContent = "Connecting…";
+  try { await api("connect", { host }); toast("Connected"); eqData = setData = null; await poll(); }
+  catch (e) { fail(e); }
+  finally { $("#connectBtn").disabled = false; $("#connectBtn").textContent = "Connect"; }
+};
+$("#ipInput").addEventListener("keydown", e => { if (e.key === "Enter") $("#connectBtn").click(); });
+$("#findBtn").onclick = async () => {
+  const b = $("#findBtn"); b.disabled = true; b.textContent = "Searching…";
+  try {
+    const r = await api("discover");
+    const f = $("#found");
+    if (!r.speakers.length) f.innerHTML = '<div class="muted">No speakers found. Enter the IP address manually.</div>';
+    else {
+      f.innerHTML = r.speakers.map(s => `<button class="btn" data-host="${s.host}"><b>${esc(s.name || s.model)}</b> <span class="muted">· ${esc(s.model)} · ${s.host}</span></button>`).join("");
+      $$("button", f).forEach(x => x.onclick = () => { $("#ipInput").value = x.dataset.host; $("#connectBtn").click(); });
+    }
+  } catch (e) { fail(e); }
+  finally { b.disabled = false; b.textContent = "Find speakers on my network"; }
+};
+function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+$("#retryBtn").onclick = poll;
+const changeSpeaker = async () => { await api("forget", {}); eqData = setData = null; tab = "home"; await poll(); };
+$("#changeBtn").onclick = changeSpeaker; $("#changeSpk").onclick = changeSpeaker;
+
+/* ---------------- power / source ---------------- */
+$("#powerBtn").onclick = async () => {
+  if (!S || !S.connected) return;
+  const on = !S.on;
+  try { await api("power", { on }); toast(on ? "Turning on…" : "Standby"); setTimeout(poll, 700); } catch (e) { fail(e); }
+};
+$("#sources").addEventListener("click", async e => {
+  const b = e.target.closest(".src"); if (!b) return;
+  try { await api("source", { source: b.dataset.src }); S.source = b.dataset.src; S.on = true; render(); setTimeout(poll, 700); } catch (e) { fail(e); }
+});
+
+/* ---------------- volume ---------------- */
+let volTimer = null, volPending = null;
+function sendVolume(v) {
+  volPending = v; volSentAt = Date.now();
+  if (volTimer) return;
+  volTimer = setTimeout(async () => {
+    const val = volPending; volTimer = null;
+    try { await api("volume", { volume: val }); } catch (e) { fail(e); }
+    volSentAt = Date.now();
+  }, 120);
+}
+const vs = $("#volSlider");
+vs.addEventListener("input", () => { setFill(vs); $("#volNum").textContent = vs.value; sendVolume(+vs.value); });
+vs.addEventListener("pointerdown", () => volDragging = true);
+window.addEventListener("pointerup", () => volDragging = false);
+vs.addEventListener("wheel", e => { e.preventDefault(); stepVol(e.deltaY < 0 ? 1 : -1); }, { passive: false });
+$("#volCard").addEventListener("wheel", e => { if (e.target !== vs) { e.preventDefault(); stepVol(e.deltaY < 0 ? 1 : -1); } }, { passive: false });
+function stepVol(d) {
+  if (!S || !S.connected) return;
+  const v = Math.max(0, Math.min(100, +vs.value + d));
+  vs.value = v; setFill(vs); $("#volNum").textContent = v; sendVolume(v);
+}
+$("#volUp").onclick = () => stepVol(+1);
+$("#volDown").onclick = () => stepVol(-1);
+$("#muteBtn").onclick = async () => {
+  try { await api("mute", { muted: !S.muted }); S.muted = !S.muted; render(); } catch (e) { fail(e); }
+};
+document.addEventListener("keydown", e => {
+  if (e.target.matches("input[type=text], select")) return;
+  if (tab !== "home") return;
+  if (e.key === "ArrowUp") { e.preventDefault(); stepVol(1); }
+  else if (e.key === "ArrowDown") { e.preventDefault(); stepVol(-1); }
+  else if (e.key.toLowerCase() === "m") $("#muteBtn").click();
+});
+
+/* ---------------- EQ ---------------- */
+const fmt = {
+  desk_mode_setting: v => `${(+v).toFixed(1)} dB`, wall_mode_setting: v => `${(+v).toFixed(1)} dB`,
+  treble: v => `${v > 0 ? "+" : ""}${(+v).toFixed(2)} dB`, subwoofer_gain: v => `${v > 0 ? "+" : ""}${v} dB`,
+  balance: v => v == 0 ? "Centre" : v < 0 ? `L ${-v}` : `R ${v}`,
+  high_pass_freq: v => `${v} Hz`, sub_out_low_pass_freq: v => `${v} Hz`,
+};
+const PRESET_NAMES = { custom: "Custom", other: "Other", kc62: "KEF KC62", kf92: "KEF KF92", kube8b: "KEF Kube 8b", kube10b: "KEF Kube 10b", kube12b: "KEF Kube 12b", kube15mie: "KEF Kube 15 MIE", t2: "KEF T2" };
+
+async function loadEq() {
+  if (!eqData) { show("#eqLoading", true); show("#eqBody", false); }
+  try { eqData = await api("eq"); renderEq(); } catch (e) { $("#eqLoading").textContent = "Couldn't load sound settings: " + e.message; }
+}
+function renderEq() {
+  const p = eqData.profile, R = eqData.ranges;
+  show("#eqLoading", false); show("#eqBody", true);
+  $$("[data-eq]").forEach(el => {
+    const k = el.dataset.eq;
+    if (el.type === "checkbox") el.checked = !!p[k];
+    else if (el.type === "range") {
+      const r = R[k] || {}; el.min = r.minimum ?? 0; el.max = r.maximum ?? 10; el.step = r.step || 1;
+      if (!el.matches(":active")) el.value = p[k] ?? 0;
+      setFill(el);
+    }
+  });
+  $$("[data-val]").forEach(el => { const k = el.dataset.val; el.textContent = (fmt[k] || String)(p[k]); });
+  $$("[data-eq-seg]").forEach(seg => $$("button", seg).forEach(b => b.classList.toggle("active", b.dataset.v === p[seg.dataset.eqSeg])));
+  const sel = $("[data-eq-select=subwoofer_preset]");
+  if (!sel.options.length) sel.innerHTML = eqData.choices.subwoofer_preset.map(v => `<option value="${v}">${PRESET_NAMES[v] || v}</option>`).join("");
+  sel.value = p.subwoofer_preset;
+  $$("[data-dep]").forEach(el => el.classList.toggle("dim", !p[el.dataset.dep]));
+}
+let eqQueue = {}, eqTimer = null, eqBusy = false;
+function sendEq(changes) {
+  Object.assign(eqQueue, changes); Object.assign(eqData.profile, changes); renderEq();
+  clearTimeout(eqTimer); eqTimer = setTimeout(flushEq, 250);
+}
+async function flushEq() {
+  if (eqBusy) { eqTimer = setTimeout(flushEq, 150); return; }
+  const c = eqQueue; eqQueue = {}; if (!Object.keys(c).length) return;
+  eqBusy = true;
+  try { const d = await api("eq", c); if (!Object.keys(eqQueue).length) { eqData = d; renderEq(); loadProfiles(); } }
+  catch (e) { fail(e); loadEq(); }
+  finally { eqBusy = false; }
+}
+$("#eqBody").addEventListener("input", e => {
+  const el = e.target, k = el.dataset.eq; if (!k) return;
+  if (el.type === "range") { setFill(el); const v = +el.value; eqData.profile[k] = v; $(`[data-val=${k}]`).textContent = (fmt[k] || String)(v); sendEq({ [k]: v }); }
+});
+$("#eqBody").addEventListener("change", e => {
+  const el = e.target;
+  if (el.dataset.eq && el.type === "checkbox") sendEq({ [el.dataset.eq]: el.checked });
+  if (el.dataset.eqSelect) sendEq({ [el.dataset.eqSelect]: el.value });
+});
+$("#eqBody").addEventListener("click", e => {
+  const b = e.target.closest(".seg button"); if (!b) return;
+  sendEq({ [b.parentElement.dataset.eqSeg]: b.dataset.v });
+});
+$("#eqReset").onclick = async () => {
+  if (!confirm("Reset all sound settings to KEF defaults?")) return;
+  try { eqData = await api("eq/reset", {}); renderEq(); toast("Sound settings reset"); } catch (e) { fail(e); }
+};
+
+/* ---------------- settings ---------------- */
+async function loadSettings() {
+  renderInfo();
+  if (!setData) show("#setLoading", true);
+  try { setData = await api("settings"); renderSettings(); } catch (e) { $("#setLoading").textContent = "Couldn't load settings: " + e.message; }
+}
+function renderInfo() {
+  const i = (S && S.info) || {}, d = i.device || {};
+  const rows = [["Name", d.name], ["Model", d.model_name || i.model], ["Firmware", i.firmware || d.firmware_version], ["IP address", i.host],
+    ["Connection", i.secure ? "Secure (HTTPS)" : i.secure === false ? "HTTP" : "—"], ["MAC", d.mac_address], ["Serial", d.serial_number]];
+  $("#infoKv").innerHTML = rows.filter(r => r[1]).map(([k, v]) => `<div>${k}</div><div>${esc(v)}</div>`).join("");
+}
+function renderSettings() {
+  show("#setLoading", false);
+  const groups = {};
+  for (const s of setData.settings) (groups[s.group] ||= []).push(s);
+  let html = "";
+  for (const [g, items] of Object.entries(groups)) {
+    html += `<div class="card"><h2>${esc(g)}</h2>`;
+    for (const s of items) {
+      const help = s.help ? `<small>${esc(s.help)}</small>` : "";
+      if (s.type === "bool") html += `<div class="row"><div class="lbl">${esc(s.label)}${help}</div><label class="switch"><input type="checkbox" data-set="${s.key}" ${s.value ? "checked" : ""}><span></span></label></div>`;
+      else if (s.type === "enum") html += `<div class="row"><div class="lbl">${esc(s.label)}${help}</div><select data-set="${s.key}">${s.choices.map(([v, l]) => `<option value="${v}" ${v === s.value ? "selected" : ""}>${esc(l)}</option>`).join("")}${s.choices.some(c => c[0] === s.value) ? "" : `<option selected value="${esc(s.value)}">${esc(s.value)}</option>`}</select></div>`;
+      else if (s.type === "number") html += `<div class="slider-row"><div class="top"><span>${esc(s.label)}</span><span class="val" id="sv-${s.key}">${s.value}</span></div><input type="range" data-set="${s.key}" min="${s.min}" max="${s.max}" step="${s.step}" value="${s.value}">${help ? `<div class="hint" style="margin-top:0">${esc(s.help)}</div>` : ""}</div>`;
+      else html += `<div class="row"><div class="lbl">${esc(s.label)}</div><input type="text" data-set="${s.key}" value="${esc(s.value)}" style="width:180px"></div>`;
+    }
+    if (g === "Volume" && setData.default_volume != null) {
+      html += `<div class="slider-row"><div class="top"><span>Default (wake-up) volume</span><span class="val" id="sv-defvol">${setData.default_volume}</span></div><input type="range" id="defVol" min="0" max="100" step="1" value="${setData.default_volume}"></div>`;
+    }
+    html += `</div>`;
+  }
+  const body = $("#setBody"); body.innerHTML = html;
+  $$("input[type=range]", body).forEach(setFill);
+}
+async function saveSetting(key, value) {
+  try { await api("settings", { key, value }); toast("Saved"); if (key === "device_name") poll(); }
+  catch (e) { fail(e); loadSettings(); }
+}
+$("#setBody").addEventListener("input", e => {
+  const el = e.target; if (el.type !== "range") return; setFill(el);
+  if (el.id === "defVol") $("#sv-defvol").textContent = el.value; else $("#sv-" + el.dataset.set).textContent = el.value;
+});
+$("#setBody").addEventListener("change", async e => {
+  const el = e.target;
+  if (el.id === "defVol") { try { await api("default_volume", { volume: +el.value }); toast("Saved"); } catch (er) { fail(er); } return; }
+  const k = el.dataset.set; if (!k) return;
+  if (el.type === "checkbox") saveSetting(k, el.checked);
+  else if (el.type === "range") saveSetting(k, +el.value);
+  else saveSetting(k, el.value);
+});
+$("#rebootBtn").onclick = async () => {
+  if (!confirm("Restart the speakers? They'll be unavailable for about a minute.")) return;
+  try { await api("reboot", {}); toast("Restarting…"); } catch (e) { fail(e); }
+};
+</script>
+</body>
+</html>

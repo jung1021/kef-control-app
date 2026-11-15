@@ -1,0 +1,3 @@
+pykefcontrol[discovery]>=1.0
+pystray>=0.19
+pillow>=10
