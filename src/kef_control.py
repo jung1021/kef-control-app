@@ -51,7 +51,7 @@ except ImportError:  # pragma: no cover
     raise
 
 APP_NAME = "KEF Control"
-APP_VERSION = "1.3.1"
+APP_VERSION = "1.3.2"
 GITHUB_REPO = "jung1021/kef-control-app"
 UPDATE_CHECK_INTERVAL = 24 * 3600
 def _is_packaged() -> bool:
@@ -944,6 +944,10 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if path in ("/", "/index.html"):
                 return self._send(200, UI_FILE.read_bytes(), "text/html; charset=utf-8")
+            if path == "/icon.png":
+                return self._send(200, (HERE / "icon.png").read_bytes(), "image/png")
+            if path == "/favicon.ico":
+                return self._send(200, (HERE / "kef_control.ico").read_bytes(), "image/x-icon")
             if path == "/api/state":
                 LIFETIME.beat()
                 return self._json(MANAGER.state())

@@ -32,7 +32,7 @@ rm -rf "$STAGE"/runtime/Lib/site-packages/Xlib "$STAGE"/runtime/Lib/site-package
 PTH=$(ls "$STAGE"/runtime/python3*._pth)
 ZIP=$(basename "$(ls "$STAGE"/runtime/python3*.zip)")
 printf '%s\r\n.\r\nLib\\site-packages\r\n..\\app\r\n' "$ZIP" > "$PTH"
-cp ../src/kef_control.py ../src/tray.py ../src/powersync.py ../src/ui.html ../src/kef_control.ico "$STAGE/app/"
+cp ../src/kef_control.py ../src/tray.py ../src/powersync.py ../src/ui.html ../src/kef_control.ico ../src/icon.png "$STAGE/app/"
 
 echo "==> Precompiling Python files (faster start-up)"
 if python3 -c "import sys; sys.exit(0 if '%d.%d' % sys.version_info[:2] == '${PY_VERSION%.*}' else 1)"; then
