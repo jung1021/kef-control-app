@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.9.0.schema.json
 PackageIdentifier: jung1021.KEFControl
-PackageVersion: 1.3.0
+PackageVersion: 1.3.1
 InstallerLocale: en-US
 InstallerType: nullsoft
 Scope: user
@@ -15,7 +15,7 @@ AppsAndFeaturesEntries:
   ProductCode: KEFControl
 Installers:
 - Architecture: x64
-  InstallerUrl: https://github.com/jung1021/kef-control-app/releases/download/v1.3.0/KEFControl-Setup-1.3.0.exe
-  InstallerSha256: 5057B7DF8DC96BAE066F0ADC209608098BC0B3D7B03BF5954BFB52503D38B20F
+  InstallerUrl: https://github.com/jung1021/kef-control-app/releases/download/v1.3.1/KEFControl-Setup-1.3.1.exe
+  InstallerSha256: 8182A51EEF07F91B9EEFF4C743AA770078D74333D7D7C48462575E7E6407985D
 ManifestType: installer
 ManifestVersion: 1.9.0

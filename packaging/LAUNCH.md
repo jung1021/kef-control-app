@@ -7,7 +7,7 @@
   - Website: `https://jung1021.github.io/kef-control-app/`
   - Topics: `kef`, `kef-connect`, `lsx-ii`, `lsx-ii-lt`, `ls50-wireless-ii`, `windows`, `tray-app`, `speaker-control`, `python`
 - [ ] **Social preview:** Settings → General → Social preview → upload `docs/social-preview.png`. This is the image people see when the link is shared.
-- [ ] **Release v1.3.0** with `KEFControl-Setup-1.3.0.exe` attached. Paste the notes from `CHANGELOG.md`.
+- [ ] **Release v1.3.1** with `KEFControl-Setup-1.3.1.exe` attached. Paste the notes from `CHANGELOG.md`.
 
 ## 2. Google (10 minutes, then wait)
 - [ ] Go to https://search.google.com/search-console → **Add property → URL prefix** → `https://jung1021.github.io/kef-control-app/`

@@ -151,21 +151,10 @@ class Tray:
         self._redraw_menu()
 
     def _update_title(self) -> None:
-        s = self.state
-        if not s.get("configured"):
-            title = "KEF Control - not set up"
-        elif not s.get("connected"):
-            title = "KEF Control - speaker offline"
-        elif not s.get("on"):
-            title = "KEF Control - standby"
-        else:
-            muted = " (muted)" if s.get("muted") else ""
-            src = SOURCE_LABELS.get(s.get("source", ""), s.get("source", ""))
-            title = f"KEF Control - {src}, volume {s.get('volume')}{muted}"
-        try:
-            self.icon.title = title[:127]
-        except Exception:  # noqa: BLE001
-            pass
+        # The hover tooltip is intentionally fixed: it can't refresh itself without
+        # polling the speaker, and stale status text is worse than none. Live status
+        # is shown at the top of the right-click menu, which refreshes when it opens.
+        pass
 
     # -- actions -----------------------------------------------------------------
     def _do(self, fn: Callable[[], Any]) -> Callable[..., None]:

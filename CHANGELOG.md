@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1 – 2026-11-15
+### Fixed
+- Clicking the tray icon (or the Start menu shortcut) now brings the existing KEF Control window to the front instead of opening another one. Extra windows left over from older versions are closed.
+- The tray tooltip is now simply "KEF Control". It no longer shows status such as "not set up" that could be out of date. Live status is at the top of the right-click menu.
+
 ## 1.3.0 – 2026-11-15
 ### New
 - **Now playing**: track, artist, album art, progress and play/pause/skip when streaming over Wi-Fi or Bluetooth (in the app and the tray menu).

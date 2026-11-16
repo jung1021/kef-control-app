@@ -51,7 +51,7 @@ except ImportError:  # pragma: no cover
     raise
 
 APP_NAME = "KEF Control"
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.3.1"
 GITHUB_REPO = "jung1021/kef-control-app"
 UPDATE_CHECK_INTERVAL = 24 * 3600
 def _is_packaged() -> bool:
@@ -1071,7 +1071,65 @@ def find_browser() -> str | None:
     return None
 
 
+WINDOW_TITLE = "KEF Control"  # must match <title> in ui.html
+_last_launch = 0.0
+
+
+def focus_existing_window() -> bool:
+    """Bring an already-open KEF Control window to the front. True if one was found."""
+    if sys.platform != "win32":
+        return False
+    import ctypes
+    from ctypes import wintypes
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    found: list[int] = []
+    EnumProc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)  # noqa: N806
+
+    def cb(hwnd, _lparam):  # noqa: ANN001, ANN202
+        if not user32.IsWindowVisible(hwnd) and not user32.IsIconic(hwnd):
+            return True
+        n = user32.GetWindowTextLengthW(hwnd)
+        if n <= 0 or n > 200:
+            return True
+        buf = ctypes.create_unicode_buffer(n + 1)
+        user32.GetWindowTextW(hwnd, buf, n + 1)
+        if buf.value != WINDOW_TITLE:
+            return True
+        cls = ctypes.create_unicode_buffer(64)
+        user32.GetClassNameW(hwnd, cls, 64)
+        if cls.value.startswith("Chrome_WidgetWin"):  # Edge / Chrome app window
+            found.append(hwnd)
+        return True
+
+    user32.EnumWindows(EnumProc(cb), 0)
+    if not found:
+        return False
+    for extra in found[1:]:  # tidy up duplicates from older versions
+        user32.PostMessageW(extra, 0x0010, 0, 0)  # WM_CLOSE
+    hwnd = found[0]
+    SW_RESTORE, SW_SHOW = 9, 5  # noqa: N806
+    user32.ShowWindow(hwnd, SW_RESTORE if user32.IsIconic(hwnd) else SW_SHOW)
+    # Windows only lets the foreground app hand focus to another window; a synthetic
+    # Alt key press makes this process eligible (standard workaround).
+    user32.keybd_event(0x12, 0, 0, 0)
+    user32.keybd_event(0x12, 0, 2, 0)
+    user32.SetForegroundWindow(hwnd)
+    user32.BringWindowToTop(hwnd)
+    return True
+
+
 def open_window(url: str) -> subprocess.Popen | None:
+    """Show the KEF Control window: focus the existing one, or open it if there is none."""
+    global _last_launch
+    try:
+        if focus_existing_window():
+            return None
+    except Exception:  # noqa: BLE001
+        log.debug("focus_existing_window failed", exc_info=True)
+    # A window was just launched and is still starting up: don't open a second one.
+    if time.monotonic() - _last_launch < 6:
+        return None
+    _last_launch = time.monotonic()
     browser = find_browser()
     if browser:
         profile = config_dir() / "window-profile"
